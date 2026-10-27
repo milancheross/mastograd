@@ -10,7 +10,14 @@
  */
 (function () {
 
-const { COLORING_CATEGORIES, COLORING_TEMPLATES } = window.MastogradColoringLibrary;
+const {
+  COLORING_CATEGORIES,
+  COLORING_TEMPLATES,
+  getUserTemplates,
+  addUserTemplate,
+  removeUserTemplate,
+  getAllTemplates
+} = window.MastogradColoringLibrary;
 const { convertPhotoToColoringPage, scanlineFloodFill, MarkerStroke, drawGeometricShape, eraseAt } = window.MastogradColoringEngine;
 
 const PALETTES = {
@@ -283,7 +290,8 @@ class MastogradColoringStudio {
   }
 
   loadTemplate(tplId) {
-    const tpl = COLORING_TEMPLATES.find(t => t.id === tplId) || COLORING_TEMPLATES[0];
+    const all = getAllTemplates();
+    const tpl = all.find(t => t.id === tplId) || all[0];
     this.state.currentTemplateId = tpl.id;
 
     const w = 780;
@@ -296,15 +304,61 @@ class MastogradColoringStudio {
 
     this.linesCanvas.width = w;
     this.linesCanvas.height = h;
-    tpl.draw(this.linesCtx, w, h);
 
     this.draftCanvas.width = w;
     this.draftCanvas.height = h;
 
-    this.history = [];
-    this.historyIndex = -1;
-    this.pushHistory();
-    this.updateTitleBadge(tpl.title);
+    if (tpl.dataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        this.linesCtx.fillStyle = '#ffffff';
+        this.linesCtx.fillRect(0, 0, w, h);
+        const hRatio = w / img.naturalWidth;
+        const vRatio = h / img.naturalHeight;
+        const ratio = Math.min(hRatio, vRatio);
+        const nw = Math.round(img.naturalWidth * ratio);
+        const nh = Math.round(img.naturalHeight * ratio);
+        const cx = Math.round((w - nw) / 2);
+        const cy = Math.round((h - nh) / 2);
+        this.linesCtx.drawImage(img, cx, cy, nw, nh);
+
+        this.history = [];
+        this.historyIndex = -1;
+        this.pushHistory();
+        this.updateTitleBadge(tpl.title);
+      };
+      img.src = tpl.dataUrl;
+    } else if (typeof tpl.draw === 'function') {
+      tpl.draw(this.linesCtx, w, h);
+      this.history = [];
+      this.historyIndex = -1;
+      this.pushHistory();
+      this.updateTitleBadge(tpl.title);
+    }
+  }
+
+  saveLinesToUserLibrary(canvasWithLines, title = 'Moja Bojanka', desc = 'Učitano u biblioteku') {
+    const dataUrl = canvasWithLines.toDataURL('image/png');
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = 160;
+    thumbCanvas.height = 120;
+    const tCtx = thumbCanvas.getContext('2d');
+    tCtx.fillStyle = '#ffffff';
+    tCtx.fillRect(0, 0, 160, 120);
+
+    const hRatio = 160 / canvasWithLines.width;
+    const vRatio = 120 / canvasWithLines.height;
+    const ratio = Math.min(hRatio, vRatio);
+    const nw = Math.round(canvasWithLines.width * ratio);
+    const nh = Math.round(canvasWithLines.height * ratio);
+    tCtx.drawImage(canvasWithLines, (160 - nw) / 2, (120 - nh) / 2, nw, nh);
+
+    return addUserTemplate({
+      title,
+      desc,
+      dataUrl,
+      thumbUrl: thumbCanvas.toDataURL('image/png')
+    });
   }
 
   setCustomLines(canvasWithLines, title = 'Prilagođena Bojanka') {
@@ -375,36 +429,141 @@ class MastogradColoringStudio {
   initLibraryModal() {
     const dialog = document.getElementById('cbLibraryModal');
     const openBtn = document.getElementById('cbOpenLibraryBtn');
+    const topOpenBtn = document.getElementById('topOpenLibraryBtn');
     const closeBtn = document.getElementById('cbCloseLibraryBtn');
-    const grid = document.getElementById('cbLibraryGrid');
-    const tabsContainer = document.getElementById('cbLibraryTabs');
 
-    openBtn?.addEventListener('click', () => {
+    // Upload dugmad u biblioteci
+    const uploadDirectBtn = document.getElementById('cbLibUploadDirectBtn');
+    const uploadDirectInput = document.getElementById('cbLibUploadDirectInput');
+    const uploadPhotoBtn = document.getElementById('cbLibUploadPhotoBtn');
+    const uploadPhotoInput = document.getElementById('cbLibUploadPhotoInput');
+    const uploadBar = document.getElementById('cbLibUploadBar');
+
+    const openModalWithTab = (cat = 'all') => {
       dialog?.showModal();
-      this.renderLibraryGrid('all');
-    });
-    document.getElementById('topOpenLibraryBtn')?.addEventListener('click', () => {
-      dialog?.showModal();
-      this.renderLibraryGrid('all');
-    });
+      this.renderLibraryTabs(cat);
+      this.renderLibraryGrid(cat);
+    };
+
+    openBtn?.addEventListener('click', () => openModalWithTab('all'));
+    topOpenBtn?.addEventListener('click', () => openModalWithTab('all'));
     closeBtn?.addEventListener('click', () => dialog?.close());
 
-    // Tabs
-    if (tabsContainer) {
-      tabsContainer.innerHTML = '';
-      COLORING_CATEGORIES.forEach((cat, idx) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `cb-cat-pill ${idx === 0 ? 'active' : ''}`;
-        btn.textContent = cat.label;
-        btn.addEventListener('click', () => {
-          tabsContainer.querySelectorAll('.cb-cat-pill').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          this.renderLibraryGrid(cat.id);
+    // 1. Direktno učitavanje gotove bojanke / crteža u biblioteku
+    uploadDirectBtn?.addEventListener('click', () => uploadDirectInput?.click());
+    uploadDirectInput?.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length) {
+        this.processDirectUploadFiles(files);
+        uploadDirectInput.value = '';
+      }
+    });
+
+    // 2. Učitavanje fotografije iz biblioteke (otvara konvertor sa zatvaranjem procepa)
+    uploadPhotoBtn?.addEventListener('click', () => uploadPhotoInput?.click());
+    uploadPhotoInput?.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        this.loadFileIntoConverter(file);
+        uploadPhotoInput.value = '';
+      }
+    });
+
+    // 3. Drag & Drop direktno na traku za upload u biblioteci
+    if (uploadBar) {
+      ['dragenter', 'dragover'].forEach(evName => {
+        uploadBar.addEventListener(evName, (e) => {
+          e.preventDefault();
+          uploadBar.classList.add('dragover');
         });
-        tabsContainer.appendChild(btn);
+      });
+      ['dragleave', 'drop'].forEach(evName => {
+        uploadBar.addEventListener(evName, (e) => {
+          e.preventDefault();
+          uploadBar.classList.remove('dragover');
+        });
+      });
+      uploadBar.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith('image/'));
+        if (files.length) {
+          this.processDirectUploadFiles(files);
+        }
       });
     }
+  }
+
+  processDirectUploadFiles(files) {
+    let lastLoadedTplId = null;
+    let pending = files.length;
+
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          // Standardizuj veličinu platna za čisto bojenje
+          const canvas = document.createElement('canvas');
+          canvas.width = 780;
+          canvas.height = 580;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 780, 580);
+
+          const hRatio = 780 / img.naturalWidth;
+          const vRatio = 580 / img.naturalHeight;
+          const ratio = Math.min(hRatio, vRatio);
+          const nw = Math.round(img.naturalWidth * ratio);
+          const nh = Math.round(img.naturalHeight * ratio);
+          ctx.drawImage(img, (780 - nw) / 2, (580 - nh) / 2, nw, nh);
+
+          const rawName = file.name.replace(/\.[^/.]+$/, '').trim();
+          const cleanTitle = rawName ? rawName.slice(0, 24) : `Učitana Bojanka ${getUserTemplates().length + 1}`;
+          const newTpl = this.saveLinesToUserLibrary(canvas, cleanTitle, 'Dodato u moju biblioteku');
+          lastLoadedTplId = newTpl.id;
+
+          pending--;
+          if (pending === 0) {
+            // Osveži prikaz biblioteke i automatski učitaj poslednju dodatu sliku
+            this.renderLibraryTabs('user');
+            this.renderLibraryGrid('user');
+            if (lastLoadedTplId) {
+              this.loadTemplate(lastLoadedTplId);
+            }
+          }
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  renderLibraryTabs(activeCatId) {
+    const tabsContainer = document.getElementById('cbLibraryTabs');
+    if (!tabsContainer) return;
+    tabsContainer.innerHTML = '';
+
+    const userCount = getUserTemplates().length;
+
+    COLORING_CATEGORIES.forEach((cat) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `cb-cat-pill ${cat.id === activeCatId ? 'active' : ''}`;
+
+      // Ako je kategorija 'user', prikaži tačan broj učitanih slika
+      if (cat.id === 'user') {
+        btn.textContent = `⭐ Moje Slike (${userCount})`;
+      } else {
+        btn.textContent = cat.label;
+      }
+
+      btn.addEventListener('click', () => {
+        tabsContainer.querySelectorAll('.cb-cat-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.renderLibraryGrid(cat.id);
+      });
+      tabsContainer.appendChild(btn);
+    });
   }
 
   renderLibraryGrid(catId) {
@@ -412,18 +571,53 @@ class MastogradColoringStudio {
     if (!grid) return;
     grid.innerHTML = '';
 
+    // Kartica za brzi upload direktno na početku grida (za 'all' i 'user' tabove)
+    if (catId === 'all' || catId === 'user') {
+      const addCard = document.createElement('button');
+      addCard.type = 'button';
+      addCard.className = 'cb-lib-card cb-lib-upload-card';
+      addCard.title = 'Učitaj novu sliku ili gotovu bojanku';
+      addCard.innerHTML = `
+        <div class="cb-lib-upload-card-content">
+          <span style="font-size:32px;">➕</span>
+          <strong>Učitaj novu sliku</strong>
+          <span>Klikni ili prevuci ovde</span>
+        </div>
+      `;
+      addCard.addEventListener('click', () => {
+        document.getElementById('cbLibUploadDirectInput')?.click();
+      });
+      grid.appendChild(addCard);
+    }
+
+    const all = getAllTemplates();
     const list = catId === 'all'
-      ? COLORING_TEMPLATES
-      : COLORING_TEMPLATES.filter(t => t.category === catId);
+      ? all
+      : (catId === 'user' ? getUserTemplates() : COLORING_TEMPLATES.filter(t => t.category === catId));
+
+    if (list.length === 0 && catId === 'user') {
+      const emptyNote = document.createElement('div');
+      emptyNote.style.cssText = 'grid-column: 1 / -1; padding: 24px 16px; text-align: center; color: var(--text-secondary); font-size: 13px;';
+      emptyNote.innerHTML = `
+        <p>Još uvek nemaš sačuvanih slika u biblioteci.</p>
+        <p style="font-size: 11px;">Klikni na dugme <strong>„➕ Učitaj Bojanku / Crtež”</strong> iznad da dodaš omiljene likove i crteže!</p>
+      `;
+      grid.appendChild(emptyNote);
+      return;
+    }
 
     list.forEach(tpl => {
       const card = document.createElement('button');
       card.type = 'button';
       card.className = 'cb-lib-card';
+
+      const isUser = !!tpl.isUserUploaded;
+
       card.innerHTML = `
         <div class="cb-lib-thumb">
           <canvas width="160" height="120" data-tpl-thumb="${tpl.id}"></canvas>
         </div>
+        ${isUser ? `<span class="cb-lib-card-badge">Moja Slika</span><button type="button" class="cb-lib-del-btn" title="Obriši ovu sliku iz biblioteke">🗑️</button>` : ''}
         <div class="cb-lib-info">
           <strong>${tpl.title}</strong>
           <span>${tpl.desc}</span>
@@ -433,8 +627,40 @@ class MastogradColoringStudio {
       // Render miniature preview
       setTimeout(() => {
         const cvs = card.querySelector(`canvas[data-tpl-thumb="${tpl.id}"]`);
-        if (cvs) tpl.draw(cvs.getContext('2d'), 160, 120);
+        if (cvs) {
+          const ctx = cvs.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 160, 120);
+
+          if (tpl.thumbUrl || tpl.dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+              const hRatio = 160 / img.naturalWidth;
+              const vRatio = 120 / img.naturalHeight;
+              const ratio = Math.min(hRatio, vRatio);
+              const nw = Math.round(img.naturalWidth * ratio);
+              const nh = Math.round(img.naturalHeight * ratio);
+              ctx.drawImage(img, (160 - nw) / 2, (120 - nh) / 2, nw, nh);
+            };
+            img.src = tpl.thumbUrl || tpl.dataUrl;
+          } else if (typeof tpl.draw === 'function') {
+            tpl.draw(ctx, 160, 120);
+          }
+        }
       }, 0);
+
+      // Dugme za brisanje sopstvene slike
+      if (isUser) {
+        const delBtn = card.querySelector('.cb-lib-del-btn');
+        delBtn?.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          if (confirm(`Da li želiš da obrišeš sliku "${tpl.title}" iz biblioteke?`)) {
+            removeUserTemplate(tpl.id);
+            this.renderLibraryTabs(catId);
+            this.renderLibraryGrid(catId);
+          }
+        });
+      }
 
       card.addEventListener('click', () => {
         this.loadTemplate(tpl.id);
@@ -443,6 +669,31 @@ class MastogradColoringStudio {
 
       grid.appendChild(card);
     });
+  }
+
+  loadFileIntoConverter(file) {
+    const dialog = document.getElementById('cbConverterModal');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 840;
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+        if (w > maxDim || h > maxDim) {
+          const s = maxDim / Math.max(w, h);
+          w = Math.round(w * s);
+          h = Math.round(h * s);
+        }
+        this.converterTempCanvas.width = w;
+        this.converterTempCanvas.height = h;
+        this.converterTempCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        dialog?.showModal();
+        this.renderConverterPreview();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 
   initConverterModal() {
@@ -457,27 +708,8 @@ class MastogradColoringStudio {
     uploadInput?.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const img = new Image();
-          img.onload = () => {
-            const maxDim = 840;
-            let w = img.naturalWidth;
-            let h = img.naturalHeight;
-            if (w > maxDim || h > maxDim) {
-              const s = maxDim / Math.max(w, h);
-              w = Math.round(w * s);
-              h = Math.round(h * s);
-            }
-            this.converterTempCanvas.width = w;
-            this.converterTempCanvas.height = h;
-            this.converterTempCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            dialog?.showModal();
-            this.renderConverterPreview();
-          };
-          img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
+        this.loadFileIntoConverter(file);
+        uploadInput.value = '';
       }
     });
 
@@ -500,46 +732,32 @@ class MastogradColoringStudio {
 
     applyBtn?.addEventListener('click', () => {
       const linesCanvas = convertPhotoToColoringPage(this.converterTempCanvas, this.converterOptions);
-      this.setCustomLines(linesCanvas, 'Fotografija u Bojanci');
+      const title = `Bojanka iz Foto ${getUserTemplates().length + 1}`;
+      // Automatski sačuvaj i u trajnu korisničku biblioteku
+      const newTpl = this.saveLinesToUserLibrary(linesCanvas, title, 'Automatski kreirano iz fotografije');
+      this.loadTemplate(newTpl.id);
       dialog?.close();
     });
 
     const directBtn = document.getElementById('cbDirectLoadBtn');
     directBtn?.addEventListener('click', () => {
-      this.setCustomLines(this.converterTempCanvas, 'Učitana Bojanka');
+      const title = `Učitana Bojanka ${getUserTemplates().length + 1}`;
+      const newTpl = this.saveLinesToUserLibrary(this.converterTempCanvas, title, 'Učitana gotova bojanka');
+      this.loadTemplate(newTpl.id);
       dialog?.close();
     });
 
-    // Drag & Drop slika direktno na platno
+    // Drag & Drop slika direktno na platno studija
     const stageViewport = document.getElementById('cbCanvasViewport');
     stageViewport?.addEventListener('dragover', (e) => e.preventDefault());
     stageViewport?.addEventListener('drop', (e) => {
       e.preventDefault();
       const file = e.dataTransfer?.files?.[0];
       if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const img = new Image();
-          img.onload = () => {
-            const maxDim = 840;
-            let w = img.naturalWidth;
-            let h = img.naturalHeight;
-            if (w > maxDim || h > maxDim) {
-              const s = maxDim / Math.max(w, h);
-              w = Math.round(w * s);
-              h = Math.round(h * s);
-            }
-            this.converterTempCanvas.width = w;
-            this.converterTempCanvas.height = h;
-            this.converterTempCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            dialog?.showModal();
-            this.renderConverterPreview();
-          };
-          img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
+        this.loadFileIntoConverter(file);
       }
     });
+  }
   }
 
   openConverterWithCanvas(canvas) {

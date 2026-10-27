@@ -6,12 +6,62 @@
 
 const COLORING_CATEGORIES = [
   { id: 'all', label: '🌟 Sve Slike' },
+  { id: 'user', label: '⭐ Moje Slike' },
   { id: 'animals', label: '🦁 Životinje' },
   { id: 'cartoons', label: '🦸 Crtani & Heroji' },
   { id: 'vehicles', label: '🚗 Vozila' },
   { id: 'fairytale', label: '🦄 Bajke & Magija' },
   { id: 'nature', label: '🌸 Priroda & Mandala' }
 ];
+
+const STORAGE_KEY = 'mastograd_user_coloring_templates';
+
+function getUserTemplates() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (err) {
+    console.error('Greška pri učitavanju korisničkih slika iz biblioteke:', err);
+    return [];
+  }
+}
+
+function saveUserTemplates(list) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.error('Greška pri čuvanju slika u biblioteku:', err);
+  }
+}
+
+function addUserTemplate(tpl) {
+  const current = getUserTemplates();
+  const newTpl = {
+    id: tpl.id || ('user_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
+    category: 'user',
+    title: tpl.title || 'Moja Bojanka',
+    desc: tpl.desc || 'Učitana slika u biblioteci',
+    dataUrl: tpl.dataUrl,
+    thumbUrl: tpl.thumbUrl || tpl.dataUrl,
+    isUserUploaded: true,
+    createdAt: Date.now()
+  };
+  current.unshift(newTpl);
+  saveUserTemplates(current);
+  return newTpl;
+}
+
+function removeUserTemplate(id) {
+  let current = getUserTemplates();
+  current = current.filter(t => t.id !== id);
+  saveUserTemplates(current);
+  return current;
+}
+
+function getAllTemplates() {
+  const userList = getUserTemplates();
+  return [...userList, ...COLORING_TEMPLATES];
+}
 
 const COLORING_TEMPLATES = [
   {
@@ -586,7 +636,11 @@ const COLORING_TEMPLATES = [
 
 window.MastogradColoringLibrary = {
   COLORING_CATEGORIES,
-  COLORING_TEMPLATES
+  COLORING_TEMPLATES,
+  getUserTemplates,
+  addUserTemplate,
+  removeUserTemplate,
+  getAllTemplates
 };
 
 })();
