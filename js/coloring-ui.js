@@ -432,12 +432,9 @@ class MastogradColoringStudio {
     const topOpenBtn = document.getElementById('topOpenLibraryBtn');
     const closeBtn = document.getElementById('cbCloseLibraryBtn');
 
-    // Upload dugmad u biblioteci
-    const uploadDirectBtn = document.getElementById('cbLibUploadDirectBtn');
-    const uploadDirectInput = document.getElementById('cbLibUploadDirectInput');
-    const uploadPhotoBtn = document.getElementById('cbLibUploadPhotoBtn');
-    const uploadPhotoInput = document.getElementById('cbLibUploadPhotoInput');
-    const uploadBar = document.getElementById('cbLibUploadBar');
+    // Veliko Upload dugme u biblioteci
+    const bigUploadBtn = document.getElementById('cbBigUploadBtn');
+    const bigUploadInput = document.getElementById('cbBigUploadInput');
 
     const openModalWithTab = (cat = 'all') => {
       dialog?.showModal();
@@ -449,55 +446,23 @@ class MastogradColoringStudio {
     topOpenBtn?.addEventListener('click', () => openModalWithTab('all'));
     closeBtn?.addEventListener('click', () => dialog?.close());
 
-    // 1. Direktno učitavanje gotove bojanke / crteža u biblioteku
-    uploadDirectBtn?.addEventListener('click', () => uploadDirectInput?.click());
-    uploadDirectInput?.addEventListener('change', (e) => {
+    // Klik na veliko dugme UPLOAD
+    bigUploadBtn?.addEventListener('click', () => bigUploadInput?.click());
+    bigUploadInput?.addEventListener('change', (e) => {
       const files = Array.from(e.target.files || []);
       if (files.length) {
         this.processDirectUploadFiles(files);
-        uploadDirectInput.value = '';
+        bigUploadInput.value = '';
+        dialog?.close();
       }
     });
-
-    // 2. Učitavanje fotografije iz biblioteke (otvara konvertor sa zatvaranjem procepa)
-    uploadPhotoBtn?.addEventListener('click', () => uploadPhotoInput?.click());
-    uploadPhotoInput?.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        this.loadFileIntoConverter(file);
-        uploadPhotoInput.value = '';
-      }
-    });
-
-    // 3. Drag & Drop direktno na traku za upload u biblioteci
-    if (uploadBar) {
-      ['dragenter', 'dragover'].forEach(evName => {
-        uploadBar.addEventListener(evName, (e) => {
-          e.preventDefault();
-          uploadBar.classList.add('dragover');
-        });
-      });
-      ['dragleave', 'drop'].forEach(evName => {
-        uploadBar.addEventListener(evName, (e) => {
-          e.preventDefault();
-          uploadBar.classList.remove('dragover');
-        });
-      });
-      uploadBar.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith('image/'));
-        if (files.length) {
-          this.processDirectUploadFiles(files);
-        }
-      });
-    }
   }
 
   processDirectUploadFiles(files) {
     let lastLoadedTplId = null;
     let pending = files.length;
 
-    files.forEach((file, index) => {
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const img = new Image();
@@ -519,17 +484,13 @@ class MastogradColoringStudio {
 
           const rawName = file.name.replace(/\.[^/.]+$/, '').trim();
           const cleanTitle = rawName ? rawName.slice(0, 24) : `Učitana Bojanka ${getUserTemplates().length + 1}`;
-          const newTpl = this.saveLinesToUserLibrary(canvas, cleanTitle, 'Dodato u moju biblioteku');
+          const newTpl = this.saveLinesToUserLibrary(canvas, cleanTitle, 'Učitana slika');
           lastLoadedTplId = newTpl.id;
 
           pending--;
-          if (pending === 0) {
-            // Osveži prikaz biblioteke i automatski učitaj poslednju dodatu sliku
-            this.renderLibraryTabs('user');
-            this.renderLibraryGrid('user');
-            if (lastLoadedTplId) {
-              this.loadTemplate(lastLoadedTplId);
-            }
+          if (pending === 0 && lastLoadedTplId) {
+            // Automatski učitaj dodatu sliku za bojenje na glavnom platnu
+            this.loadTemplate(lastLoadedTplId);
           }
         };
         img.src = ev.target.result;
@@ -543,19 +504,11 @@ class MastogradColoringStudio {
     if (!tabsContainer) return;
     tabsContainer.innerHTML = '';
 
-    const userCount = getUserTemplates().length;
-
     COLORING_CATEGORIES.forEach((cat) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `cb-cat-pill ${cat.id === activeCatId ? 'active' : ''}`;
-
-      // Ako je kategorija 'user', prikaži tačan broj učitanih slika
-      if (cat.id === 'user') {
-        btn.textContent = `⭐ Moje Slike (${userCount})`;
-      } else {
-        btn.textContent = cat.label;
-      }
+      btn.textContent = cat.label;
 
       btn.addEventListener('click', () => {
         tabsContainer.querySelectorAll('.cb-cat-pill').forEach(b => b.classList.remove('active'));
@@ -571,40 +524,10 @@ class MastogradColoringStudio {
     if (!grid) return;
     grid.innerHTML = '';
 
-    // Kartica za brzi upload direktno na početku grida (za 'all' i 'user' tabove)
-    if (catId === 'all' || catId === 'user') {
-      const addCard = document.createElement('button');
-      addCard.type = 'button';
-      addCard.className = 'cb-lib-card cb-lib-upload-card';
-      addCard.title = 'Učitaj novu sliku ili gotovu bojanku';
-      addCard.innerHTML = `
-        <div class="cb-lib-upload-card-content">
-          <span style="font-size:32px;">➕</span>
-          <strong>Učitaj novu sliku</strong>
-          <span>Klikni ili prevuci ovde</span>
-        </div>
-      `;
-      addCard.addEventListener('click', () => {
-        document.getElementById('cbLibUploadDirectInput')?.click();
-      });
-      grid.appendChild(addCard);
-    }
-
     const all = getAllTemplates();
     const list = catId === 'all'
       ? all
-      : (catId === 'user' ? getUserTemplates() : COLORING_TEMPLATES.filter(t => t.category === catId));
-
-    if (list.length === 0 && catId === 'user') {
-      const emptyNote = document.createElement('div');
-      emptyNote.style.cssText = 'grid-column: 1 / -1; padding: 24px 16px; text-align: center; color: var(--text-secondary); font-size: 13px;';
-      emptyNote.innerHTML = `
-        <p>Još uvek nemaš sačuvanih slika u biblioteci.</p>
-        <p style="font-size: 11px;">Klikni na dugme <strong>„➕ Učitaj Bojanku / Crtež”</strong> iznad da dodaš omiljene likove i crteže!</p>
-      `;
-      grid.appendChild(emptyNote);
-      return;
-    }
+      : COLORING_TEMPLATES.filter(t => t.category === catId);
 
     list.forEach(tpl => {
       const card = document.createElement('button');
@@ -656,7 +579,6 @@ class MastogradColoringStudio {
           ev.stopPropagation();
           if (confirm(`Da li želiš da obrišeš sliku "${tpl.title}" iz biblioteke?`)) {
             removeUserTemplate(tpl.id);
-            this.renderLibraryTabs(catId);
             this.renderLibraryGrid(catId);
           }
         });

@@ -6,7 +6,6 @@
 
 const COLORING_CATEGORIES = [
   { id: 'all', label: '🌟 Sve Slike' },
-  { id: 'user', label: '⭐ Moje Slike' },
   { id: 'animals', label: '🦁 Životinje' },
   { id: 'cartoons', label: '🦸 Crtani & Heroji' },
   { id: 'vehicles', label: '🚗 Vozila' },

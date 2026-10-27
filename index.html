@@ -180,30 +180,17 @@
       <button type="button" class="icon-btn" id="cbCloseLibraryBtn" title="Zatvori biblioteku">✕</button>
     </div>
     <div class="modal-body">
-      <!-- Traka za upload direktno u biblioteku -->
-      <div class="cb-lib-upload-bar" id="cbLibUploadBar">
-        <input type="file" id="cbLibUploadDirectInput" accept="image/*" multiple hidden />
-        <input type="file" id="cbLibUploadPhotoInput" accept="image/*" hidden />
-
-        <div class="cb-lib-upload-prompt">
-          <span class="cb-lib-upload-icon">📥</span>
-          <div>
-            <strong>Dodaj novu sliku u biblioteku</strong>
-            <p>Učitaj crtež sa interneta ili fotografiju koju pretvaramo u čistu stranicu za bojenje (možeš i prevući sliku ovde)</p>
-          </div>
+      <!-- Veliko Dugme UPLOAD u Biblioteci -->
+      <input type="file" id="cbBigUploadInput" accept="image/*" hidden />
+      <button type="button" class="cb-big-upload-btn" id="cbBigUploadBtn" title="Učitaj sliku ili bojanku sa svog uređaja">
+        <span class="cb-big-upload-icon">📁</span>
+        <div class="cb-big-upload-texts">
+          <strong class="cb-big-upload-title">⬆️ UPLOAD SLIKE</strong>
+          <span class="cb-big-upload-sub">Klikni ovde da izabereš sliku sa telefona ili računara</span>
         </div>
+      </button>
 
-        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-          <button type="button" class="pill-btn primary" id="cbLibUploadDirectBtn" title="Učitaj gotovu bojanku ili crno-beli crtež sa računara/telefona">
-            ➕ Učitaj Bojanku / Crtež
-          </button>
-          <button type="button" class="pill-btn" id="cbLibUploadPhotoBtn" style="border:1px solid var(--border-subtle); background:var(--bg-elevated);" title="Izaberi fotografiju, prilagodi linije i dodaj je u biblioteku">
-            📷 Iz Fotografije
-          </button>
-        </div>
-      </div>
-
-      <!-- Category Tabs (🌟 Sve Slike, ⭐ Moje Slike, 🦁 Životinje...) -->
+      <!-- Category Tabs (🌟 Sve Slike, 🦁 Životinje, 🦸 Crtani & Heroji...) -->
       <div style="display:flex; gap:6px; overflow-x:auto; padding-bottom:6px;" id="cbLibraryTabs">
         <!-- Populated by coloring-ui.js -->
       </div>
