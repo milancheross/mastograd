@@ -482,9 +482,29 @@ class MastogradColoringStudio {
           const nh = Math.round(img.naturalHeight * ratio);
           ctx.drawImage(img, (780 - nw) / 2, (580 - nh) / 2, nw, nh);
 
+          // Čišćenje pozadine i osiguravanje jasnih linija za bojenje kanticom
+          const imgData = ctx.getImageData(0, 0, 780, 580);
+          const d = imgData.data;
+          for (let i = 0; i < d.length; i += 4) {
+            if (d[i + 3] < 80) {
+              // Transparentna pozadina postaje čisto bela
+              d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255;
+            } else {
+              const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+              if (lum > 200) {
+                // Prljavo bela pozadina postaje savršeno bela
+                d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255;
+              } else if (lum < 110) {
+                // Tamne linije konture postaju čisto crne za precizno zatvaranje
+                d[i] = 0; d[i + 1] = 0; d[i + 2] = 0; d[i + 3] = 255;
+              }
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+
           const rawName = file.name.replace(/\.[^/.]+$/, '').trim();
           const cleanTitle = rawName ? rawName.slice(0, 24) : `Učitana Bojanka ${getUserTemplates().length + 1}`;
-          const newTpl = this.saveLinesToUserLibrary(canvas, cleanTitle, 'Učitana slika');
+          const newTpl = this.saveLinesToUserLibrary(canvas, cleanTitle, 'Spremno za bojenje');
           lastLoadedTplId = newTpl.id;
 
           pending--;
@@ -669,17 +689,16 @@ class MastogradColoringStudio {
       dialog?.close();
     });
 
-    // Drag & Drop slika direktno na platno studija
+    // Drag & Drop slika direktno na platno studija (odmah spremno za bojenje!)
     const stageViewport = document.getElementById('cbCanvasViewport');
     stageViewport?.addEventListener('dragover', (e) => e.preventDefault());
     stageViewport?.addEventListener('drop', (e) => {
       e.preventDefault();
       const file = e.dataTransfer?.files?.[0];
       if (file && file.type.startsWith('image/')) {
-        this.loadFileIntoConverter(file);
+        this.processDirectUploadFiles([file]);
       }
     });
-  }
   }
 
   openConverterWithCanvas(canvas) {
@@ -701,6 +720,18 @@ class MastogradColoringStudio {
   }
 
   initActions() {
+    // 1. Direktno učitavanje gotove bojanke (Top Bar i Stage Bar)
+    const directFileInput = document.getElementById('cbDirectFileInput');
+    document.getElementById('topDirectUploadBtn')?.addEventListener('click', () => directFileInput?.click());
+    document.getElementById('stageDirectUploadBtn')?.addEventListener('click', () => directFileInput?.click());
+    directFileInput?.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length) {
+        this.processDirectUploadFiles(files);
+        directFileInput.value = '';
+      }
+    });
+
     document.getElementById('cbUndoBtn')?.addEventListener('click', () => this.undo());
     document.getElementById('cbRedoBtn')?.addEventListener('click', () => this.redo());
     document.getElementById('cbClearBtn')?.addEventListener('click', () => this.clearColors());

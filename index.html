@@ -24,9 +24,14 @@
           📚 Biblioteka Slika
         </button>
 
+        <input type="file" id="cbDirectFileInput" accept="image/*" hidden />
+        <button type="button" class="pill-btn primary" id="topDirectUploadBtn" title="Učitaj gotovu bojanku ili crtež spremne za bojenje" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%);">
+          📁 Učitaj Sliku za Bojenje
+        </button>
+
         <input type="file" id="cbConverterFileInput" accept="image/*" hidden />
-        <button type="button" class="pill-btn" id="topConverterUploadBtn" title="Pretvori bilo koju fotografiju u čistu stranicu za bojanje">
-          📷 Napravi od Fotografije
+        <button type="button" class="pill-btn" id="topConverterUploadBtn" title="Pretvori običnu fotografiju u crno-belu bojanku">
+          📷 Iz Fotografije
         </button>
 
         <button type="button" class="icon-btn" id="cbUndoBtn" title="Korak nazad (Undo)" disabled aria-label="Korak nazad">
@@ -94,7 +99,10 @@
             <button type="button" class="pill-btn primary" id="cbOpenLibraryBtn" title="Otvori biblioteku slika za bojanje">
               📚 Biblioteka
             </button>
-            <button type="button" class="pill-btn" id="cbConverterUploadBtn" title="Pretvori fotografiju u stranicu za bojenje">
+            <button type="button" class="pill-btn primary" id="stageDirectUploadBtn" title="Učitaj gotovu bojanku spremnu za bojenje" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%);">
+              📁 Učitaj Bojanku
+            </button>
+            <button type="button" class="pill-btn" id="cbConverterUploadBtn" title="Pretvori običnu fotografiju u bojanku">
               📷 Iz Fotografije
             </button>
           </div>
@@ -182,11 +190,11 @@
     <div class="modal-body">
       <!-- Veliko Dugme UPLOAD u Biblioteci -->
       <input type="file" id="cbBigUploadInput" accept="image/*" hidden />
-      <button type="button" class="cb-big-upload-btn" id="cbBigUploadBtn" title="Učitaj sliku ili bojanku sa svog uređaja">
+      <button type="button" class="cb-big-upload-btn" id="cbBigUploadBtn" title="Učitaj crtež ili gotovu bojanku spremnu za bojenje">
         <span class="cb-big-upload-icon">📁</span>
         <div class="cb-big-upload-texts">
-          <strong class="cb-big-upload-title">⬆️ UPLOAD SLIKE</strong>
-          <span class="cb-big-upload-sub">Klikni ovde da izabereš sliku sa telefona ili računara</span>
+          <strong class="cb-big-upload-title">⬆️ UČITAJ SLIKU SPREMNU ZA BOJENJE</strong>
+          <span class="cb-big-upload-sub">Učitaj crno-beli crtež ili gotovu bojanku (bez obrade, odmah za bojenje)</span>
         </div>
       </button>
 
