@@ -1,0 +1,11 @@
+{
+  "name": "Mastograd Studio — PicsArt Pro Cartoon & Illustration Editor",
+  "short_name": "Mastograd",
+  "description": "10/10 NPR Cartoon, Comic Book, 2D Clipart & Looney Tunes Photo Editor modeled after PicsArt for Android",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0c10",
+  "theme_color": "#a855f7",
+  "orientation": "portrait-primary"
+}
+

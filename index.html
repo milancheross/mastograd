@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b0c10" />
+  <title>Mastograd Studio — PicsArt Pro Cartoon & Illustration Editor</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top PicsArt Studio Header -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <div class="brand-logo" aria-hidden="true">M</div>
+        <div class="brand-title">
+          <h1>Mastograd Studio <span class="pro-badge">10/10 NPR</span></h1>
+          <span class="brand-subtitle">PicsArt Android Pro Foto &amp; Crtani Editor</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <input type="file" id="photoUploadInput" accept="image/*" hidden />
+        <button type="button" class="pill-btn" id="uploadPhotoBtn" title="Učitaj svoju sliku sa uređaja">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span>Dodaj sliku</span>
+        </button>
+
+        <button type="button" class="icon-btn" id="undoBtn" title="Korak nazad (Undo)" disabled aria-label="Korak nazad">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+          </svg>
+        </button>
+
+        <button type="button" class="icon-btn" id="redoBtn" title="Korak napred (Redo)" disabled aria-label="Korak napred">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
+          </svg>
+        </button>
+
+        <button type="button" class="pill-btn" id="compareSplitBtn" title="Uporedi Pre / Posle sa klizačem">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>
+          </svg>
+          <span>Pre / Posle</span>
+        </button>
+
+        <button type="button" class="icon-btn" id="zoomToggleBtn" title="Uvećaj za proveru čistoće linija">100%</button>
+
+        <button type="button" class="pill-btn primary" id="openExportBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+          </svg>
+          <span>Sačuvaj HD</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Interactive Canvas Stage -->
+    <main class="canvas-stage" id="canvasStage">
+      <div class="stage-floating-top">
+        <div class="stage-pill-group" id="sampleChipGroup" aria-label="Test scene">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="quality-meter" title="Automatska ocena čistoće tuš linija i vektorskih površina">
+          <span id="edgeClarityText">Čistoća linija: 9.8 • Površine: 9.7</span>
+          <span class="quality-score" id="qualityScoreBadge">10/10</span>
+        </div>
+      </div>
+
+      <div class="canvas-viewport" id="canvasViewport">
+        <canvas id="outputCanvas" width="760" height="560"></canvas>
+        <canvas id="originalCanvas" width="760" height="560"></canvas>
+        <canvas id="overlayCanvas" width="760" height="560"></canvas>
+
+        <span class="split-badge before" id="badgeBefore">Original</span>
+        <span class="split-badge after" id="badgeAfter">Ilustracija</span>
+
+        <div class="split-slider-line" id="splitSliderLine">
+          <div class="split-handle">↔</div>
+        </div>
+      </div>
+
+      <div class="processing-pill" id="processingPill">
+        <span class="spinner-dot"></span>
+        <span>Renderovanje čistih vektorskih linija i cel-senčenja...</span>
+      </div>
+    </main>
+
+    <!-- PicsArt Android Bottom / Side Studio Dock -->
+    <aside class="editor-dock">
+      <div class="panel-content-area">
+        <!-- TAB 1: Crtani & Ilustracija Filteri -->
+        <section class="tool-panel active" id="panelFilters">
+          <div class="panel-header">
+            <h2>FX Crtani &amp; Ilustracioni Filteri</h2>
+          </div>
+
+          <div class="filter-cards-grid" id="filterCardsGrid">
+            <!-- Populated by app.js with live mini-canvases -->
+          </div>
+
+          <div class="substyle-strip" id="substyleStrip">
+            <!-- Sub-variations for Comic Book, 2D Clipart, Looney Tunes -->
+          </div>
+        </section>
+
+        <!-- TAB 2: Kontrola Linija & Tuša (Clean Ink Engine) -->
+        <section class="tool-panel" id="panelLines">
+          <div class="panel-header">
+            <h2>Čiste Linije &amp; Tuš Konture (XDoG + Scharr)</h2>
+          </div>
+
+          <div class="control-group">
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Čistoća linija (Uklanjanje šuma pre tuša)</span>
+                <span class="slider-val" id="sliderLineCleanlinessVal">82%</span>
+              </div>
+              <input type="range" id="sliderLineCleanliness" min="10" max="100" step="1" value="82" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Debljina crtanih linija (Ink Width)</span>
+                <span class="slider-val" id="sliderLineThicknessVal">1.45px</span>
+              </div>
+              <input type="range" id="sliderLineThickness" min="0.6" max="2.4" step="0.05" value="1.45" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Selektivnost kontura (Edge Prag)</span>
+                <span class="slider-val" id="sliderLineThresholdVal">58%</span>
+              </div>
+              <input type="range" id="sliderLineThreshold" min="15" max="92" step="1" value="58" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Jačina i crnilo tuša (Ink Opacity)</span>
+                <span class="slider-val" id="sliderLineStrengthVal">94%</span>
+              </div>
+              <input type="range" id="sliderLineStrength" min="0" max="100" step="1" value="94" />
+            </div>
+
+            <div class="swatch-row">
+              <span style="font-size: 12px; font-weight: 600;">Boja tuš linije:</span>
+              <div class="swatch-list">
+                <button type="button" class="color-swatch active" data-color="#08090f" style="background:#08090f;" title="Marvel Strip Crni Tuš"></button>
+                <button type="button" class="color-swatch" data-color="#1e120a" style="background:#1e120a;" title="Looney Tunes Topli Sepia Tuš"></button>
+                <button type="button" class="color-swatch" data-color="#141b38" style="background:#141b38;" title="Anime Indigo Tuš"></button>
+                <button type="button" class="color-swatch" data-color="#3b0a1e" style="background:#3b0a1e;" title="Vintage Strip Bordo Tuš"></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: Cel-Shading, Halftone & Boje -->
+        <section class="tool-panel" id="panelShading">
+          <div class="panel-header">
+            <h2>Cel-Shading, Vektor &amp; Strip Efekti</h2>
+          </div>
+
+          <div class="control-group">
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Glatkoća 2D površina (SNN + Bilateral)</span>
+                <span class="slider-val" id="sliderSurfaceFlatnessVal">3x</span>
+              </div>
+              <input type="range" id="sliderSurfaceFlatness" min="1" max="5" step="1" value="3" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Broj nivoa cel-senčenja (Posterize Bands)</span>
+                <span class="slider-val" id="sliderCelLevelsVal">6 tonova</span>
+              </div>
+              <input type="range" id="sliderCelLevels" min="2" max="10" step="1" value="6" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Crtana živost boja (Cartoon Vibrance)</span>
+                <span class="slider-val" id="sliderColorPunchVal">45%</span>
+              </div>
+              <input type="range" id="sliderColorPunch" min="-50" max="90" step="1" value="45" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Comic Book Halftone tačkice</span>
+                <span class="slider-val" id="sliderHalftoneIntensityVal">38%</span>
+              </div>
+              <input type="range" id="sliderHalftoneIntensity" min="0" max="85" step="1" value="38" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Veličina Halftone tačkica</span>
+                <span class="slider-val" id="sliderHalftoneSizeVal">5px</span>
+              </div>
+              <input type="range" id="sliderHalftoneSize" min="3" max="10" step="1" value="5" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Duboke strip senke (India Ink Pooling)</span>
+                <span class="slider-val" id="sliderShadowInkPoolVal">42%</span>
+              </div>
+              <input type="range" id="sliderShadowInkPool" min="0" max="85" step="1" value="42" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Looney Tunes Technicolor toplina</span>
+                <span class="slider-val" id="sliderTechnicolorWarmthVal">8%</span>
+              </div>
+              <input type="range" id="sliderTechnicolorWarmth" min="-40" max="80" step="1" value="8" />
+            </div>
+
+            <div class="toggle-row">
+              <span>2D Clipart Bela Stiker Kontura</span>
+              <button type="button" class="toggle-btn" id="toggleStickerBorder" aria-label="2D Clipart Stiker Kontura"></button>
+            </div>
+
+            <div class="toggle-row">
+              <span>Looney Tunes Krugovi ("That's all Folks!")</span>
+              <button type="button" class="toggle-btn" id="toggleLooneyRings" aria-label="Looney Tunes Krugovi"></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: Osnovna Foto Podešavanja (PicsArt Tools) -->
+        <section class="tool-panel" id="panelAdjust">
+          <div class="panel-header">
+            <h2>Foto Podešavanja (Pre Filtera)</h2>
+            <button type="button" class="reset-section-btn" id="resetAdjustBtn">Resetuj</button>
+          </div>
+
+          <div class="control-group">
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Osvetljenje (Brightness)</span>
+                <span class="slider-val" id="adjBrightnessVal">0</span>
+              </div>
+              <input type="range" id="adjBrightness" min="-50" max="50" step="1" value="0" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Kontrast (Contrast)</span>
+                <span class="slider-val" id="adjContrastVal">0</span>
+              </div>
+              <input type="range" id="adjContrast" min="-50" max="60" step="1" value="0" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Zasićenost (Saturation)</span>
+                <span class="slider-val" id="adjSaturationVal">0</span>
+              </div>
+              <input type="range" id="adjSaturation" min="-60" max="60" step="1" value="0" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Toplina (Warmth)</span>
+                <span class="slider-val" id="adjWarmthVal">0</span>
+              </div>
+              <input type="range" id="adjWarmth" min="-50" max="50" step="1" value="0" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Mat / Izbledeli Filmski Efekat (Fade)</span>
+                <span class="slider-val" id="adjFadeVal">0</span>
+              </div>
+              <input type="range" id="adjFade" min="0" max="60" step="1" value="0" />
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-line">
+                <span>Vinjeta (Vignette)</span>
+                <span class="slider-val" id="adjVignetteVal">0</span>
+              </div>
+              <input type="range" id="adjVignette" min="0" max="80" step="1" value="0" />
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: Strip Oblačići & Stikeri -->
+        <section class="tool-panel" id="panelStickers">
+          <div class="panel-header">
+            <h2>Strip Oblačići &amp; Crtani Stikeri (Prevuci po slici)</h2>
+            <button type="button" class="reset-section-btn" id="clearStickersBtn">Ukloni sve</button>
+          </div>
+
+          <div class="stickers-grid">
+            <button type="button" class="sticker-btn" data-sticker="pow">
+              <span class="sticker-emoji">💥</span>
+              <span>POW!</span>
+            </button>
+            <button type="button" class="sticker-btn" data-sticker="bam">
+              <span class="sticker-emoji">🔥</span>
+              <span>BAM!</span>
+            </button>
+            <button type="button" class="sticker-btn" data-sticker="wow">
+              <span class="sticker-emoji">⚡</span>
+              <span>WOW!</span>
+            </button>
+            <button type="button" class="sticker-btn" data-sticker="speech">
+              <span class="sticker-emoji">💬</span>
+              <span>Strip Oblačić</span>
+            </button>
+            <button type="button" class="sticker-btn" data-sticker="thatsall">
+              <span class="sticker-emoji">🎬</span>
+              <span>That's all Folks!</span>
+            </button>
+            <button type="button" class="sticker-btn" data-sticker="stars">
+              <span class="sticker-emoji">⭐</span>
+              <span>Crtane Zvezde</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Bottom PicsArt-Style Navigation Bar -->
+      <nav class="bottom-nav" aria-label="Alatke editora">
+        <button type="button" class="nav-tab active" data-panel="panelFilters">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span>Crtani FX</span>
+        </button>
+
+        <button type="button" class="nav-tab" data-panel="panelLines">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          </svg>
+          <span>Čiste Linije</span>
+        </button>
+
+        <button type="button" class="nav-tab" data-panel="panelShading">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/>
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+          </svg>
+          <span>Cel &amp; Boje</span>
+        </button>
+
+        <button type="button" class="nav-tab" data-panel="panelAdjust">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+          <span>Podesi</span>
+        </button>
+
+        <button type="button" class="nav-tab" data-panel="panelStickers">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>Stikeri</span>
+        </button>
+      </nav>
+    </aside>
+  </div>
+
+  <!-- Export HD Dialog -->
+  <dialog class="studio-modal" id="exportModal">
+    <div class="modal-header">
+      <h3>Sačuvaj Crtanu Ilustraciju</h3>
+      <button type="button" class="icon-btn" id="closeExportBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 12.5px; color: var(--text-secondary);">
+        Izaberi format za eksport slike u punoj rezoluciji sa čistim vektorskim konturama:
+      </p>
+      <div class="format-options">
+        <button type="button" class="format-btn active" data-mime="image/png">PNG (Bez gubitka)</button>
+        <button type="button" class="format-btn" data-mime="image/webp">WebP (Pro)</button>
+        <button type="button" class="format-btn" data-mime="image/jpeg">JPG (96%)</button>
+      </div>
+      <button type="button" class="pill-btn primary" id="confirmDownloadBtn" style="height: 42px; width: 100%; margin-top: 6px;">
+        Preuzmi Ilustraciju
+      </button>
+    </div>
+  </dialog>
+
+  <script src="js/cartoon-engine.js"></script>
+  <script src="js/sample-images.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
