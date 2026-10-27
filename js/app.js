@@ -1,5 +1,7 @@
-const { FILTER_PRESETS, SUBSTYLE_VARIATIONS, renderCartoonPipeline } = window.MastogradEngine;
-const { SAMPLE_SCENES, renderSampleSceneToCanvas } = window.MastogradSamples;
+(function () {
+const { FILTER_PRESETS, SUBSTYLE_VARIATIONS, extractStyleReferenceSignature, renderCartoonPipeline } = window.MastogradEngine;
+const { SAMPLE_SCENES, STYLE_REF_PRESETS, renderSampleSceneToCanvas, renderStyleReferencePresetToCanvas } = window.MastogradSamples;
+const { compileFilterPromptPayload } = window.MastogradFilterConfig;
 
 class MastogradPicsArtStudio {
   constructor() {
@@ -15,9 +17,12 @@ class MastogradPicsArtStudio {
     this.overlayCanvas = document.getElementById('overlayCanvas');
     this.overlayCtx = this.overlayCanvas.getContext('2d');
 
+    this.styleRefPresetIndex = 0;
+
     this.state = {
-      activePreset: 'comicbook',
-      params: { ...FILTER_PRESETS.comicbook.params },
+      activePreset: 'painterly-comic',
+      mvpOnlyView: false,
+      params: { ...FILTER_PRESETS['painterly-comic'].params },
       adjustments: {
         brightness: 0,
         contrast: 0,
@@ -26,6 +31,14 @@ class MastogradPicsArtStudio {
         fade: 0,
         vignette: 0
       },
+      styleRef: {
+        enabled: true,
+        name: 'Bearman Finale (Painterly Concept Ref)',
+        strength: 75,
+        signature: null
+      },
+      protectBearLogo: true,
+      bearLogoMask: { x: 380, y: 455, radius: 56 },
       stickers: [],
       splitMode: false,
       splitPercent: 50,
@@ -37,21 +50,26 @@ class MastogradPicsArtStudio {
     this.historyIndex = -1;
     this.renderQueued = false;
     this.draggingSticker = null;
+    this.draggingLogoMask = false;
     this.isDraggingSplit = false;
 
     this.initUI();
-    this.loadSampleScene('hero_portrait');
+    this.loadBuiltInStyleReference(0);
+    this.loadSampleScene('bearman_hero');
   }
 
   initUI() {
     this.buildSampleChips();
     this.buildFilterCards();
     this.bindTabNavigation();
+    this.bindModeAndShieldControls();
+    this.bindStyleReferenceControls();
     this.bindFilterSliders();
     this.bindAdjustSliders();
+    this.bindPromptActions();
     this.bindTopBarActions();
     this.bindSplitComparison();
-    this.bindStickersInteraction();
+    this.bindStickersAndShieldInteraction();
     this.bindExportDialog();
   }
 
@@ -77,6 +95,10 @@ class MastogradPicsArtStudio {
     grid.innerHTML = '';
 
     Object.values(FILTER_PRESETS).forEach(preset => {
+      if (this.state.mvpOnlyView && preset.id !== 'original' && !preset.mvpFeatured) {
+        return;
+      }
+
       const card = document.createElement('button');
       card.type = 'button';
       card.className = `filter-card ${preset.id === this.state.activePreset ? 'active' : ''}`;
@@ -87,7 +109,7 @@ class MastogradPicsArtStudio {
           <canvas class="filter-preview-canvas" width="128" height="96" data-preview-id="${preset.id}"></canvas>
           <span class="filter-tag">${preset.badge}</span>
         </div>
-        <div class="filter-card-title">${preset.name}</div>
+        <div class="filter-card-title">${preset.code !== '00' ? preset.code + ' — ' : ''}${preset.name}</div>
         <div class="filter-card-desc">${preset.desc}</div>
       `;
 
@@ -99,6 +121,138 @@ class MastogradPicsArtStudio {
     });
 
     this.renderSubstylePills(this.state.activePreset);
+  }
+
+  bindModeAndShieldControls() {
+    const creativeBtn = document.getElementById('modeCreativeBtn');
+    const productBtn = document.getElementById('modeProductSafeBtn');
+    const shieldToggle = document.getElementById('toggleBearLogoShield');
+    const allBtn = document.getElementById('filterViewAllBtn');
+    const mvpBtn = document.getElementById('filterViewMvpBtn');
+
+    const updateModeUI = (mode) => {
+      this.state.params.illustrationMode = mode;
+      creativeBtn.classList.toggle('active', mode === 'creative');
+      productBtn.classList.toggle('active', mode === 'product-safe');
+
+      if (mode === 'product-safe') {
+        this.state.protectBearLogo = true;
+        shieldToggle.classList.add('active');
+      }
+      this.updateCompiledPromptBox();
+      this.requestRender();
+    };
+
+    creativeBtn.addEventListener('click', () => updateModeUI('creative'));
+    productBtn.addEventListener('click', () => updateModeUI('product-safe'));
+
+    shieldToggle.classList.toggle('active', this.state.protectBearLogo);
+    shieldToggle.addEventListener('click', () => {
+      this.state.protectBearLogo = !this.state.protectBearLogo;
+      shieldToggle.classList.toggle('active', this.state.protectBearLogo);
+      this.updateCompiledPromptBox();
+      this.requestRender();
+    });
+
+    allBtn.addEventListener('click', () => {
+      this.state.mvpOnlyView = false;
+      allBtn.classList.add('active');
+      mvpBtn.classList.remove('active');
+      this.buildFilterCards();
+      this.updateFilterCardThumbnails();
+    });
+
+    mvpBtn.addEventListener('click', () => {
+      this.state.mvpOnlyView = true;
+      mvpBtn.classList.add('active');
+      allBtn.classList.remove('active');
+      this.buildFilterCards();
+      this.updateFilterCardThumbnails();
+    });
+  }
+
+  bindStyleReferenceControls() {
+    const toggleBtn = document.getElementById('toggleStyleRefBtn');
+    const uploadBtn = document.getElementById('uploadStyleRefBtn');
+    const fileInput = document.getElementById('styleRefUploadInput');
+    const cycleBtn = document.getElementById('cycleStyleRefPresetBtn');
+    const strengthSlider = document.getElementById('sliderStyleRefStrength');
+    const strengthVal = document.getElementById('sliderStyleRefStrengthVal');
+
+    toggleBtn?.addEventListener('click', () => {
+      this.state.styleRef.enabled = !this.state.styleRef.enabled;
+      toggleBtn.classList.toggle('active', this.state.styleRef.enabled);
+      this.updateStyleRefBadgeText();
+      this.updateCompiledPromptBox();
+      this.requestRender();
+    });
+
+    uploadBtn?.addEventListener('click', () => fileInput?.click());
+    fileInput?.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const thumbCanvas = document.getElementById('styleRefThumbCanvas');
+          const ctx = thumbCanvas.getContext('2d');
+          ctx.clearRect(0, 0, thumbCanvas.width, thumbCanvas.height);
+          ctx.drawImage(img, 0, 0, thumbCanvas.width, thumbCanvas.height);
+          const imgData = ctx.getImageData(0, 0, thumbCanvas.width, thumbCanvas.height);
+          this.state.styleRef.enabled = true;
+          this.state.styleRef.name = file.name.replace(/\.[^.]+$/, '');
+          this.state.styleRef.signature = extractStyleReferenceSignature(imgData);
+          toggleBtn?.classList.add('active');
+          this.updateStyleRefBadgeText();
+          this.updateCompiledPromptBox();
+          this.requestRender();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    cycleBtn?.addEventListener('click', () => {
+      this.styleRefPresetIndex = (this.styleRefPresetIndex + 1) % STYLE_REF_PRESETS.length;
+      this.loadBuiltInStyleReference(this.styleRefPresetIndex);
+      this.requestRender();
+    });
+
+    strengthSlider?.addEventListener('input', () => {
+      const v = parseInt(strengthSlider.value, 10);
+      this.state.styleRef.strength = v;
+      if (strengthVal) strengthVal.textContent = `${v}%`;
+      this.updateCompiledPromptBox();
+      this.requestRender();
+    });
+  }
+
+  loadBuiltInStyleReference(index) {
+    const preset = STYLE_REF_PRESETS[index] || STYLE_REF_PRESETS[0];
+    const thumbCanvas = document.getElementById('styleRefThumbCanvas');
+    if (!thumbCanvas) return;
+    const srcCanvas = renderStyleReferencePresetToCanvas(preset.id, thumbCanvas.width, thumbCanvas.height);
+    const ctx = thumbCanvas.getContext('2d');
+    ctx.drawImage(srcCanvas, 0, 0);
+    const imgData = ctx.getImageData(0, 0, thumbCanvas.width, thumbCanvas.height);
+    this.state.styleRef.name = preset.name;
+    this.state.styleRef.signature = extractStyleReferenceSignature(imgData);
+    this.updateStyleRefBadgeText();
+    this.updateCompiledPromptBox();
+  }
+
+  updateStyleRefBadgeText() {
+    const badge = document.getElementById('styleRefSignatureText');
+    if (!badge) return;
+    if (!this.state.styleRef.enabled) {
+      badge.textContent = 'Style Reference: Isključeno (koristi se samo tekstualni opis stila)';
+      return;
+    }
+    const sig = this.state.styleRef.signature;
+    if (sig) {
+      badge.textContent = `${this.state.styleRef.name} • ${sig.contrastProfile} • Tuš: ${sig.edgeDensity}%`;
+    }
   }
 
   renderSubstylePills(presetId) {
@@ -122,6 +276,7 @@ class MastogradPicsArtStudio {
         pill.classList.add('active');
         Object.assign(this.state.params, FILTER_PRESETS[presetId].params, v.overrides);
         this.syncSlidersFromState();
+        this.updateCompiledPromptBox();
         this.pushHistory();
         this.requestRender();
       });
@@ -140,8 +295,17 @@ class MastogradPicsArtStudio {
       c.classList.toggle('active', c.dataset.presetId === presetId);
     });
 
+    const isProd = this.state.params.illustrationMode === 'product-safe';
+    document.getElementById('modeCreativeBtn')?.classList.toggle('active', !isProd);
+    document.getElementById('modeProductSafeBtn')?.classList.toggle('active', isProd);
+    if (isProd) {
+      this.state.protectBearLogo = true;
+      document.getElementById('toggleBearLogoShield')?.classList.add('active');
+    }
+
     this.renderSubstylePills(presetId);
     this.syncSlidersFromState();
+    this.updateCompiledPromptBox();
     this.pushHistory();
     this.requestRender();
   }
@@ -161,17 +325,19 @@ class MastogradPicsArtStudio {
 
   bindFilterSliders() {
     const paramSliders = [
+      { id: 'sliderMasterIntensity', key: 'intensity', suffix: '%', isFloat: false },
       { id: 'sliderLineCleanliness', key: 'lineCleanliness', suffix: '%', isFloat: false },
       { id: 'sliderLineThickness', key: 'lineThickness', suffix: 'px', isFloat: true },
       { id: 'sliderLineThreshold', key: 'lineThreshold', suffix: '%', isFloat: false },
       { id: 'sliderLineStrength', key: 'lineStrength', suffix: '%', isFloat: false },
+      { id: 'sliderCrosshatch', key: 'crosshatchIntensity', suffix: '%', isFloat: false },
+      { id: 'sliderPainterlyBrush', key: 'painterlyBrush', suffix: '%', isFloat: false },
+      { id: 'sliderRimLightBoost', key: 'rimLightBoost', suffix: '%', isFloat: false },
       { id: 'sliderSurfaceFlatness', key: 'surfaceFlatness', suffix: 'x', isFloat: false },
       { id: 'sliderCelLevels', key: 'celLevels', suffix: ' tonova', isFloat: false },
       { id: 'sliderColorPunch', key: 'colorPunch', suffix: '%', isFloat: false },
       { id: 'sliderHalftoneIntensity', key: 'halftoneIntensity', suffix: '%', isFloat: false },
-      { id: 'sliderHalftoneSize', key: 'halftoneSize', suffix: 'px', isFloat: false },
-      { id: 'sliderShadowInkPool', key: 'shadowInkPool', suffix: '%', isFloat: false },
-      { id: 'sliderTechnicolorWarmth', key: 'technicolorWarmth', suffix: '%', isFloat: false }
+      { id: 'sliderShadowInkPool', key: 'shadowInkPool', suffix: '%', isFloat: false }
     ];
 
     paramSliders.forEach(({ id, key, suffix, isFloat }) => {
@@ -183,6 +349,7 @@ class MastogradPicsArtStudio {
         const val = isFloat ? parseFloat(input.value) : parseInt(input.value, 10);
         this.state.params[key] = val;
         if (valSpan) valSpan.textContent = `${val}${suffix}`;
+        this.updateCompiledPromptBox();
         this.requestRender();
       });
 
@@ -191,7 +358,6 @@ class MastogradPicsArtStudio {
       });
     });
 
-    // Ink Color Swatches
     document.querySelectorAll('.color-swatch').forEach(swatch => {
       swatch.addEventListener('click', () => {
         document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
@@ -202,7 +368,6 @@ class MastogradPicsArtStudio {
       });
     });
 
-    // Toggle buttons (Sticker Border & Looney Tunes Rings)
     const toggleSticker = document.getElementById('toggleStickerBorder');
     if (toggleSticker) {
       toggleSticker.addEventListener('click', () => {
@@ -229,9 +394,7 @@ class MastogradPicsArtStudio {
       { id: 'adjBrightness', key: 'brightness' },
       { id: 'adjContrast', key: 'contrast' },
       { id: 'adjSaturation', key: 'saturation' },
-      { id: 'adjWarmth', key: 'warmth' },
-      { id: 'adjFade', key: 'fade' },
-      { id: 'adjVignette', key: 'vignette' }
+      { id: 'adjWarmth', key: 'warmth' }
     ];
 
     adjSliders.forEach(({ id, key }) => {
@@ -262,6 +425,50 @@ class MastogradPicsArtStudio {
     }
   }
 
+  bindPromptActions() {
+    const copyPromptBtn = document.getElementById('copyFullPromptBtn');
+    const copyJsonBtn = document.getElementById('copyConfigJsonBtn');
+
+    const getPayload = () => compileFilterPromptPayload(this.state.activePreset, {
+      intensity: this.state.params.intensity,
+      illustrationMode: this.state.params.illustrationMode,
+      protectBearLogo: this.state.protectBearLogo,
+      styleRefActive: this.state.styleRef.enabled,
+      styleRefName: this.state.styleRef.name,
+      styleRefStrength: this.state.styleRef.strength,
+      styleRefSignature: this.state.styleRef.signature
+    });
+
+    copyPromptBtn?.addEventListener('click', () => {
+      const payload = getPayload();
+      navigator.clipboard?.writeText(payload.compiledFullPrompt);
+      copyPromptBtn.textContent = '✓ AI Prompt Kopiran!';
+      setTimeout(() => { copyPromptBtn.textContent = '📋 Kopiraj AI Prompt'; }, 1800);
+    });
+
+    copyJsonBtn?.addEventListener('click', () => {
+      const payload = getPayload();
+      navigator.clipboard?.writeText(JSON.stringify(payload.apiConfigJson, null, 2));
+      copyJsonBtn.textContent = '✓ JSON Kopiran!';
+      setTimeout(() => { copyJsonBtn.textContent = '{ } Kopiraj JSON Konfig'; }, 1800);
+    });
+  }
+
+  updateCompiledPromptBox() {
+    const box = document.getElementById('compiledPromptPreview');
+    if (!box) return;
+    const payload = compileFilterPromptPayload(this.state.activePreset, {
+      intensity: this.state.params.intensity,
+      illustrationMode: this.state.params.illustrationMode,
+      protectBearLogo: this.state.protectBearLogo,
+      styleRefActive: this.state.styleRef.enabled,
+      styleRefName: this.state.styleRef.name,
+      styleRefStrength: this.state.styleRef.strength,
+      styleRefSignature: this.state.styleRef.signature
+    });
+    box.textContent = payload.compiledFullPrompt;
+  }
+
   syncSlidersFromState() {
     const p = this.state.params;
     const setSlider = (id, val, suffix) => {
@@ -271,17 +478,19 @@ class MastogradPicsArtStudio {
       if (span && val !== undefined) span.textContent = `${val}${suffix}`;
     };
 
+    setSlider('sliderMasterIntensity', p.intensity ?? 80, '%');
     setSlider('sliderLineCleanliness', p.lineCleanliness, '%');
     setSlider('sliderLineThickness', p.lineThickness, 'px');
     setSlider('sliderLineThreshold', p.lineThreshold, '%');
     setSlider('sliderLineStrength', p.lineStrength, '%');
+    setSlider('sliderCrosshatch', p.crosshatchIntensity ?? 0, '%');
+    setSlider('sliderPainterlyBrush', p.painterlyBrush ?? 0, '%');
+    setSlider('sliderRimLightBoost', p.rimLightBoost ?? 0, '%');
     setSlider('sliderSurfaceFlatness', p.surfaceFlatness, 'x');
     setSlider('sliderCelLevels', p.celLevels, ' tonova');
     setSlider('sliderColorPunch', p.colorPunch, '%');
     setSlider('sliderHalftoneIntensity', p.halftoneIntensity, '%');
-    setSlider('sliderHalftoneSize', p.halftoneSize, 'px');
     setSlider('sliderShadowInkPool', p.shadowInkPool, '%');
-    setSlider('sliderTechnicolorWarmth', p.technicolorWarmth, '%');
 
     document.querySelectorAll('.color-swatch').forEach(s => {
       s.classList.toggle('active', s.dataset.color === p.inkColor);
@@ -304,12 +513,9 @@ class MastogradPicsArtStudio {
     setAdj('adjContrast', a.contrast);
     setAdj('adjSaturation', a.saturation);
     setAdj('adjWarmth', a.warmth);
-    setAdj('adjFade', a.fade);
-    setAdj('adjVignette', a.vignette);
   }
 
   bindTopBarActions() {
-    // Photo Upload
     const fileInput = document.getElementById('photoUploadInput');
     const uploadBtn = document.getElementById('uploadPhotoBtn');
 
@@ -319,11 +525,8 @@ class MastogradPicsArtStudio {
       if (file) this.loadUserFile(file);
     });
 
-    // Drag & Drop onto canvas stage
     const stage = document.getElementById('canvasStage');
-    stage.addEventListener('dragover', (e) => {
-      e.preventDefault();
-    });
+    stage.addEventListener('dragover', (e) => e.preventDefault());
     stage.addEventListener('drop', (e) => {
       e.preventDefault();
       const file = e.dataTransfer?.files?.[0];
@@ -332,11 +535,9 @@ class MastogradPicsArtStudio {
       }
     });
 
-    // Undo / Redo
     document.getElementById('undoBtn').addEventListener('click', () => this.undo());
     document.getElementById('redoBtn').addEventListener('click', () => this.redo());
 
-    // Zoom Toggle
     const zoomBtn = document.getElementById('zoomToggleBtn');
     const viewport = document.getElementById('canvasViewport');
     zoomBtn.addEventListener('click', () => {
@@ -389,44 +590,59 @@ class MastogradPicsArtStudio {
     splitLine.addEventListener('pointerup', () => { this.isDraggingSplit = false; });
   }
 
-  bindStickersInteraction() {
+  bindStickersAndShieldInteraction() {
     document.querySelectorAll('.sticker-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const type = btn.dataset.sticker;
-        this.addSticker(type);
+        this.addSticker(btn.dataset.sticker);
       });
     });
 
-    const clearBtn = document.getElementById('clearStickersBtn');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        this.state.stickers = [];
-        this.renderStickersOverlay();
-      });
-    }
+    document.getElementById('clearStickersBtn')?.addEventListener('click', () => {
+      this.state.stickers = [];
+      this.renderStickersOverlay();
+    });
 
-    // Dragging stickers on overlayCanvas
     this.overlayCanvas.addEventListener('pointerdown', (e) => {
       const pt = this.getCanvasCoords(e);
+
+      // Check stickers first
       for (let i = this.state.stickers.length - 1; i >= 0; i--) {
         const s = this.state.stickers[i];
         if (Math.hypot(pt.x - s.x, pt.y - s.y) < s.radius) {
           this.draggingSticker = s;
           this.overlayCanvas.setPointerCapture(e.pointerId);
-          break;
+          return;
+        }
+      }
+
+      // Check BEAR 5-toe logo shield mask
+      if (this.state.protectBearLogo && this.state.bearLogoMask) {
+        const m = this.state.bearLogoMask;
+        if (Math.hypot(pt.x - m.x, pt.y - m.y) <= m.radius + 12) {
+          this.draggingLogoMask = true;
+          this.overlayCanvas.setPointerCapture(e.pointerId);
         }
       }
     });
 
     this.overlayCanvas.addEventListener('pointermove', (e) => {
-      if (!this.draggingSticker) return;
       const pt = this.getCanvasCoords(e);
-      this.draggingSticker.x = pt.x;
-      this.draggingSticker.y = pt.y;
-      this.renderStickersOverlay();
+      if (this.draggingSticker) {
+        this.draggingSticker.x = pt.x;
+        this.draggingSticker.y = pt.y;
+        this.renderStickersOverlay();
+      } else if (this.draggingLogoMask) {
+        this.state.bearLogoMask.x = Math.round(pt.x);
+        this.state.bearLogoMask.y = Math.round(pt.y);
+        this.renderStickersOverlay();
+      }
     });
 
     this.overlayCanvas.addEventListener('pointerup', () => {
+      if (this.draggingLogoMask) {
+        this.draggingLogoMask = false;
+        this.requestRender();
+      }
       this.draggingSticker = null;
     });
   }
@@ -451,21 +667,41 @@ class MastogradPicsArtStudio {
     this.renderStickersOverlay();
   }
 
-  renderStickersOverlay(targetCtx = this.overlayCtx, clearFirst = true) {
+  renderStickersOverlay(targetCtx = this.overlayCtx, clearFirst = true, isExport = false) {
     const w = this.overlayCanvas.width;
     const h = this.overlayCanvas.height;
     if (clearFirst) {
       targetCtx.clearRect(0, 0, w, h);
     }
 
+    // Draw interactive dashed indicator for the 5-toe BEAR logo shield (only on studio UI, not in exported image!)
+    if (!isExport && this.state.protectBearLogo && this.state.bearLogoMask) {
+      const m = this.state.bearLogoMask;
+      targetCtx.save();
+      targetCtx.strokeStyle = 'rgba(251, 191, 36, 0.85)';
+      targetCtx.lineWidth = 2;
+      targetCtx.setLineDash([6, 4]);
+      targetCtx.beginPath();
+      targetCtx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+      targetCtx.stroke();
+
+      targetCtx.setLineDash([]);
+      targetCtx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      targetCtx.fillRect(m.x - 54, m.y - m.radius - 22, 108, 18);
+      targetCtx.fillStyle = '#fde68a';
+      targetCtx.font = '700 10px Inter, sans-serif';
+      targetCtx.textAlign = 'center';
+      targetCtx.fillText('🐾 BEAR ŠTIT (5 PRSTIJU)', m.x, m.y - m.radius - 10);
+      targetCtx.restore();
+    }
+
     for (const s of this.state.stickers) {
       targetCtx.save();
       targetCtx.translate(s.x, s.y);
 
-      if (s.type === 'pow' || s.type === 'bam' || s.type === 'wow') {
-        // Jagged Comic Action Burst
+      if (s.type === 'pow' || s.type === 'bam') {
         const spikes = 12;
-        targetCtx.fillStyle = s.type === 'pow' ? '#facc15' : s.type === 'bam' ? '#ef4444' : '#38bdf8';
+        targetCtx.fillStyle = s.type === 'pow' ? '#facc15' : '#ef4444';
         targetCtx.strokeStyle = '#090a0f';
         targetCtx.lineWidth = 4;
         targetCtx.beginPath();
@@ -487,7 +723,6 @@ class MastogradPicsArtStudio {
         targetCtx.textBaseline = 'middle';
         targetCtx.fillText(s.type.toUpperCase() + '!', 0, 2);
       } else if (s.type === 'speech') {
-        // Classic Comic Speech Bubble
         targetCtx.fillStyle = '#ffffff';
         targetCtx.strokeStyle = '#090a0f';
         targetCtx.lineWidth = 4;
@@ -496,47 +731,11 @@ class MastogradPicsArtStudio {
         targetCtx.fill();
         targetCtx.stroke();
 
-        // Tail
-        targetCtx.beginPath();
-        targetCtx.moveTo(-20, 40);
-        targetCtx.lineTo(-42, 72);
-        targetCtx.lineTo(5, 42);
-        targetCtx.fill();
-        targetCtx.stroke();
-
         targetCtx.fillStyle = '#090a0f';
-        targetCtx.font = '800 16px Inter, sans-serif';
+        targetCtx.font = '800 15px Inter, sans-serif';
         targetCtx.textAlign = 'center';
         targetCtx.textBaseline = 'middle';
-        targetCtx.fillText('TO JE TO, LJUDI!', 0, 0);
-      } else if (s.type === 'thatsall') {
-        // Looney Tunes Script Banner
-        targetCtx.fillStyle = '#fef08a';
-        targetCtx.strokeStyle = '#1e120a';
-        targetCtx.lineWidth = 5;
-        targetCtx.font = 'italic 900 30px Georgia, serif';
-        targetCtx.textAlign = 'center';
-        targetCtx.textBaseline = 'middle';
-        targetCtx.strokeText("That's all Folks!", 0, 0);
-        targetCtx.fillText("That's all Folks!", 0, 0);
-      } else if (s.type === 'stars') {
-        for (const [ox, oy, sr] of [[-40, -15, 18], [0, -32, 24], [42, -10, 17]]) {
-          targetCtx.fillStyle = '#fde047';
-          targetCtx.strokeStyle = '#090a0f';
-          targetCtx.lineWidth = 3;
-          targetCtx.beginPath();
-          for (let k = 0; k < 10; k++) {
-            const rad = k % 2 === 0 ? sr : sr * 0.45;
-            const ang = (k * Math.PI) / 5 - Math.PI / 2;
-            const x = ox + Math.cos(ang) * rad;
-            const y = oy + Math.sin(ang) * rad;
-            if (k === 0) targetCtx.moveTo(x, y);
-            else targetCtx.lineTo(x, y);
-          }
-          targetCtx.closePath();
-          targetCtx.fill();
-          targetCtx.stroke();
-        }
+        targetCtx.fillText('BEARMAN PRO!', 0, 0);
       }
 
       targetCtx.restore();
@@ -566,7 +765,7 @@ class MastogradPicsArtStudio {
       exportCanvas.height = this.outputCanvas.height;
       const ctx = exportCanvas.getContext('2d');
       ctx.drawImage(this.outputCanvas, 0, 0);
-      this.renderStickersOverlay(ctx, false);
+      this.renderStickersOverlay(ctx, false, true);
 
       const ext = this.state.exportFormat === 'image/jpeg' ? 'jpg' : this.state.exportFormat === 'image/webp' ? 'webp' : 'png';
       const url = exportCanvas.toDataURL(this.state.exportFormat, 0.96);
@@ -579,6 +778,10 @@ class MastogradPicsArtStudio {
   }
 
   loadSampleScene(sceneId) {
+    const sceneMeta = SAMPLE_SCENES.find(s => s.id === sceneId);
+    if (sceneMeta && sceneMeta.defaultLogoPos) {
+      this.state.bearLogoMask = { ...sceneMeta.defaultLogoPos };
+    }
     const sampleCanvas = renderSampleSceneToCanvas(sceneId, 760, 560);
     this.setSourceImage(sampleCanvas);
   }
@@ -588,7 +791,6 @@ class MastogradPicsArtStudio {
     reader.onload = (ev) => {
       const img = new Image();
       img.onload = () => {
-        // Fit within 960px max dimension for responsive real-time 10/10 NPR filtering
         const maxDim = 920;
         let w = img.naturalWidth;
         let h = img.naturalHeight;
@@ -601,6 +803,7 @@ class MastogradPicsArtStudio {
         c.width = w;
         c.height = h;
         c.getContext('2d').drawImage(img, 0, 0, w, h);
+        this.state.bearLogoMask = { x: Math.round(w * 0.5), y: Math.round(h * 0.75), radius: 56 };
         this.setSourceImage(c);
       };
       img.src = ev.target.result;
@@ -627,6 +830,7 @@ class MastogradPicsArtStudio {
     this.overlayCanvas.height = h;
 
     this.syncSlidersFromState();
+    this.updateCompiledPromptBox();
     this.history = [];
     this.historyIndex = -1;
     this.pushHistory();
@@ -635,7 +839,6 @@ class MastogradPicsArtStudio {
   }
 
   updateFilterCardThumbnails() {
-    // Generate real miniature previews for all filter cards from the current image
     const thumbW = 128;
     const thumbH = 96;
     const tempCanvas = document.createElement('canvas');
@@ -650,7 +853,7 @@ class MastogradPicsArtStudio {
       if (!previewCanvas) return;
       const result = renderCartoonPipeline(thumbSrcData, preset.params, {
         brightness: 0, contrast: 0, saturation: 0, warmth: 0, fade: 0, vignette: 0
-      });
+      }, []);
       previewCanvas.getContext('2d').putImageData(result.imageData, 0, 0);
     });
   }
@@ -659,7 +862,8 @@ class MastogradPicsArtStudio {
     const snapshot = JSON.stringify({
       activePreset: this.state.activePreset,
       params: this.state.params,
-      adjustments: this.state.adjustments
+      adjustments: this.state.adjustments,
+      protectBearLogo: this.state.protectBearLogo
     });
     if (this.historyIndex >= 0 && this.history[this.historyIndex] === snapshot) return;
     this.history = this.history.slice(0, this.historyIndex + 1);
@@ -685,12 +889,14 @@ class MastogradPicsArtStudio {
     this.state.activePreset = data.activePreset;
     this.state.params = { ...data.params };
     this.state.adjustments = { ...data.adjustments };
+    this.state.protectBearLogo = data.protectBearLogo;
 
     document.querySelectorAll('.filter-card').forEach(c => {
       c.classList.toggle('active', c.dataset.presetId === this.state.activePreset);
     });
 
     this.syncSlidersFromState();
+    this.updateCompiledPromptBox();
     this.updateUndoRedoButtons();
     this.requestRender();
   }
@@ -709,14 +915,26 @@ class MastogradPicsArtStudio {
     requestAnimationFrame(() => {
       setTimeout(() => {
         const srcData = this.sourceCtx.getImageData(0, 0, this.sourceCanvas.width, this.sourceCanvas.height);
-        const { imageData, metrics } = renderCartoonPipeline(srcData, this.state.params, this.state.adjustments);
+        const activeMasks = (this.state.protectBearLogo && this.state.bearLogoMask)
+          ? [this.state.bearLogoMask]
+          : [];
+        const { imageData, metrics } = renderCartoonPipeline(
+          srcData,
+          this.state.params,
+          this.state.adjustments,
+          activeMasks,
+          this.state.styleRef
+        );
         this.outputCtx.putImageData(imageData, 0, 0);
         this.renderStickersOverlay();
 
         const scoreBadge = document.getElementById('qualityScoreBadge');
         const edgeText = document.getElementById('edgeClarityText');
         if (scoreBadge) scoreBadge.textContent = metrics.overallScore;
-        if (edgeText) edgeText.textContent = `Čistoća linija: ${metrics.edgeClarity} • Površine: ${metrics.regionSmoothness}`;
+        if (edgeText) {
+          const modeLabel = this.state.params.illustrationMode === 'product-safe' ? 'Product-Safe (BEAR)' : 'Creative';
+          edgeText.textContent = `Linije: ${metrics.edgeClarity} • Režim: ${modeLabel}`;
+        }
 
         this.renderQueued = false;
         if (pill) pill.classList.remove('active');
@@ -728,3 +946,4 @@ class MastogradPicsArtStudio {
 window.addEventListener('DOMContentLoaded', () => {
   window.mastogradStudio = new MastogradPicsArtStudio();
 });
+})();

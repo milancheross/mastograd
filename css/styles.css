@@ -873,3 +873,606 @@ dialog.studio-modal::backdrop {
   background: rgba(168, 85, 247, 0.22);
 }
 
+/* Creative vs Product-Safe (BEAR Underwear) Mode Switcher */
+.mode-switch-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: #0e1017;
+  padding: 5px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.mode-switch-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  transition: all 0.16s ease;
+}
+
+.mode-switch-btn span.mode-sub {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.mode-switch-btn.active {
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+.mode-switch-btn.active span.mode-sub {
+  color: #e9d5ff;
+}
+
+/* AI Prompt Architecture Box */
+.prompt-Viewer-box {
+  background: #0b0d13;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.48;
+  color: #cbd5e1;
+  max-height: 210px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.prompt-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logo-shield-banner {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.16), rgba(168, 85, 247, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  font-size: 11.5px;
+  color: #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Style Reference Image Card */
+.style-ref-card {
+  background: linear-gradient(145deg, rgba(29, 32, 45, 0.96), rgba(20, 22, 31, 0.98));
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: var(--radius-md);
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.style-ref-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.style-ref-body {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.style-ref-thumb-wrap {
+  width: 76px;
+  height: 58px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid var(--accent-primary);
+  background: #0d0f17;
+  position: relative;
+}
+
+.style-ref-thumb-wrap canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.style-ref-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.style-ref-sig-badge {
+  font-size: 10px;
+  color: #e9d5ff;
+  background: rgba(168, 85, 247, 0.16);
+  padding: 3px 7px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+
+
+
+/* ==========================================================================
+   DEČIJA BOJANKA — NAPREDNI STUDIO CSS (DESKTOP & MOBILE RESPONSIVE)
+   ========================================================================== */
+
+/* Top Bar Studio Mode Switcher */
+.top-mode-switcher {
+  display: inline-flex;
+  background: var(--bg-elevated);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  gap: 3px;
+}
+
+.top-mode-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.16s ease;
+}
+
+.top-mode-btn.active {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(168, 85, 247, 0.4);
+}
+
+/* Studio Subshell Views */
+#aiStudioSection {
+  display: contents;
+}
+
+#coloringStudioSection {
+  grid-column: 1 / -1;
+}
+
+/* Coloring Studio Subshell */
+.coloring-subshell {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  width: 100%;
+  height: calc(100dvh - 58px);
+  overflow: hidden;
+  position: relative;
+}
+
+@media (min-width: 1024px) {
+  .coloring-subshell {
+    grid-template-columns: 88px 1fr 340px;
+    grid-template-rows: 1fr;
+    height: calc(100dvh - 60px);
+  }
+}
+
+/* Coloring Canvas Stage */
+.cb-canvas-stage {
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.05), transparent 70%),
+    #0c0e15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.cb-canvas-viewport {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  background: #ffffff;
+  border: 4px solid #1e2230;
+  touch-action: none; /* Sprečava skrolovanje prstom pri crtanju */
+}
+
+.cb-canvas-layer {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 290px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+@media (min-width: 1024px) {
+  .cb-canvas-layer {
+    max-height: calc(100dvh - 140px);
+  }
+}
+
+#cbColorCanvas {
+  position: relative;
+  z-index: 2;
+  background: #ffffff;
+}
+
+#cbLinesCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+  mix-blend-mode: multiply; /* Crne linije uvek ostaju 100% oštre preko boje */
+}
+
+#cbDraftCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 6;
+  cursor: crosshair;
+}
+
+/* Floating Top Bar on Coloring Stage */
+.cb-stage-header {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  z-index: 20;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cb-stage-group {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(20, 22, 31, 0.92);
+  backdrop-filter: blur(12px);
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+}
+
+.cb-title-tag {
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Left Tools Bar (Desktop: Left column, Mobile: Horizontal Bar under stage) */
+.cb-tools-bar {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+  z-index: 15;
+}
+
+@media (min-width: 1024px) {
+  .cb-tools-bar {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 14px 8px;
+    gap: 12px;
+  }
+}
+
+.cb-tool-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.16s ease;
+  position: relative;
+}
+
+.cb-tool-btn span.label {
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cb-tool-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.cb-tool-btn.active {
+  border-color: #f43f5e;
+  background: rgba(244, 63, 94, 0.22);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.35);
+}
+
+.cb-tool-btn.active span.label {
+  color: #ffe4e6;
+}
+
+/* Marker Size Selector Popout / Options */
+.cb-suboptions-bar {
+  display: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 4px 8px;
+  gap: 6px;
+  align-items: center;
+}
+
+.cb-suboptions-bar.visible {
+  display: flex;
+}
+
+.cb-size-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.cb-size-btn.active {
+  background: #f43f5e;
+  color: #fff;
+}
+
+/* Shapes Selector */
+.cb-shape-grid {
+  display: flex;
+  gap: 4px;
+}
+
+.cb-shape-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.cb-shape-btn.active {
+  background: var(--accent-gradient);
+  border-color: transparent;
+}
+
+/* Color Palette Dock */
+.cb-palette-dock {
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  gap: 12px;
+  overflow-y: auto;
+  z-index: 15;
+}
+
+.cb-palette-tabs-row {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.cb-palette-tab {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cb-palette-tab.active {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: #f43f5e;
+  color: #ffe4e6;
+}
+
+.cb-swatches-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .cb-swatches-grid {
+    grid-template-columns: repeat(8, 1fr);
+    overflow-x: auto;
+  }
+}
+
+.cb-swatch {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.cb-swatch:hover {
+  transform: scale(1.12);
+}
+
+.cb-swatch.active {
+  transform: scale(1.18);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px #f43f5e, 0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+/* Active Color & Custom Picker Bar */
+.cb-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-elevated);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.cb-active-indicator {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+input[type="color"].cb-color-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+}
+input[type="color"].cb-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"].cb-color-input::-webkit-color-swatch { border-radius: 8px; border: 1.5px solid var(--border-subtle); }
+
+/* Library Cards Grid in Dialog */
+.cb-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.cb-lib-card {
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+.cb-lib-card:hover {
+  transform: translateY(-3px);
+  border-color: #f43f5e;
+}
+
+.cb-lib-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cb-lib-thumb canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cb-lib-info {
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cb-lib-info strong {
+  font-size: 12.5px;
+  color: #fff;
+}
+
+.cb-lib-info span {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+}
+
+.cb-cat-pill {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cb-cat-pill.active {
+  background: var(--accent-gradient);
+  color: #fff;
+  border-color: transparent;
+}

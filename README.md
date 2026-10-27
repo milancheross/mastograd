@@ -1,21 +1,56 @@
-# Mastograd Studio — PicsArt Android Pro Foto & Crtani Editor (10/10 NPR Engine)
+# Mastograd Studio — PicsArt AI Filteri & Napredna Dečija Bojanka
 
-Kompletan modul za uređivanje slika i transformaciju fotografija u vrhunske crtane ilustracije sa **jasnim, čistim tuš linijama** i **glatkim vektorskim/cel površinama**, dizajniran po ugledu na **PicsArt za Android**.
+Kompletna kreativna platforma koja objedinjuje:
+1. **PicsArt AI & 7-Phase Master Studio** — Profesionalna transformacija fotografija u ilustracije (Comic Book Pro, Hero Concept Art, Painterly Comic, Bearman Style Reference, Product-Safe mod za BEAR Underwear sa zaštitnom maskom za šapu sa 5 prstiju).
+2. **Napredna Kreativna Dečija Bojanka** — Interaktivni studio za bojenje i crtanje za decu sa velikom paletom boja, otvorenom bibliotekom šablona i naprednim konvertorom fotografija u bojanku.
 
-## Glavni 10/10 Ilustracioni Filteri
-1. **Comic Book Filter (Marvel / DC / Sin City / Golden Age)**:
-   - Rotacioni **Scharr 3×3 + XDoG (Extended Difference of Gaussians)** detektor kontura sa uklanjanjem tačkastog šuma (*Connected-Contour Speckle Pruning*).
-   - **India Ink Shadow Pooling** za duboke stripovske crne senke.
-   - Ugaona **CMYK Ben-Day Halftone** mreža tačkica u polutonovima i senkama.
-2. **2D Clipart Filter (Vektorska Ilustracija / 2D Stiker)**:
-   - Višestruki **Symmetric Nearest Neighbor (SNN)** + **Separable Joint Bilateral** prolazi koji ravnaju teksturu kože i pozadine u čiste, ravne vektorske površine bez zamućenja ivica.
-   - Opciona **2D bela stiker kontura (Die-Cut Sticker Border)** oko glavnih linija.
-3. **Looney Tunes Filter (Klasični Warner Bros. Technicolor Cel)**:
-   - **3-Strip Technicolor** kolor matrica sa toplim zlatno-crvenim i animatorskim tonovima.
-   - **2-tonsko / 3-tonsko acetatno Cel-senčenje** (osvetljeni bazni ton + oštra crtana senka + odsjaj).
-   - Topli tamno-sepia animatorski tuš (`#1e120a`) i opcioni **"That's all Folks!"** koncentrični krugovi.
-4. **Dodatni Pro Režimi**:
-   - **Anime Studio (Cel HD)**, **Pop Art (Retro Lichtenstein)** i **Čist Tuš Crtež (Ink Line Art)**.
+---
 
-## Pokretanje
-Otvorite `index.html` direktno u pregledaču (radi i preko `file://` bez potrebe za dodatnim serverom, kao i kao instalabilna Android PWA aplikacija).
+## 🖍️ Funkcionalnosti Napredne Dečije Bojanke
+
+### 1. Napredni Konvertor Fotografije u Bojanku (Leak-Free Line Art)
+- **Problem klasičnih filtera**: prekinute ili nejasne linije uzrokuju curenje boje (flood fill leak) na celu sliku.
+- **Naše rešenje**:
+  - Višestruko bilateralno i SNN peglanje teksture kože, trave i šuma.
+  - Scharr 3×3 + DoG (Difference of Gaussians) ekstrakcija oštrih kontura.
+  - **Morphological Closing & Gap-Closing algoritam**: automatski premošćava i zatvara procepe i praznine na linijama (0–3px radijus), formirajući 100% zatvorene oblasti za bojenje.
+  - Interaktivno podešavanje: Oštrina/Prag, Debljina linija, Zatvaranje rupa i Uklanjanje šuma, sa live pregledom pre ubacivanja u bojanku.
+
+### 2. Alati za Bojenje i Crtanje
+- **🪣 Kantica (Scanline Flood Fill)**: Trenutno bojenje zatvorenih površina. Pametni *bleed* algoritam širi boju 1.5px ispod crnih linija, uklanjajući bele rubove i praznine.
+- **🖍️ Glatki Flomaster**: Kvadratna Bézier interpolacija pokreta prsta/miša za prirodne, glatke poteze flomasterom sa izborom 4 debljine (Tanka, Srednja, Debela, Jumbo).
+- **⭐ Osnovni Geometrijski Oblici**: Dodavanje i crtanje oblika:
+  - Krug / Elipsa
+  - Pravougaonik / Kvadrat
+  - Trougao
+  - Zvezda (5 krakova)
+  - Srce
+  - Prava linija
+  - Opcija: *Ispunjeno* ili *Samo linija*.
+- **🧹 Gumica**: Briše samo nanete boje, dok crne konture bojanke ostaju 100% netaknute.
+
+### 3. Veliki Izbor Boja
+- **🌈 Duga (Živa dečija paleta)**: 24 vedre, zasićene boje.
+- **🍦 Pastel**: 16 nežnih pastelnih nijansi.
+- **🦄 Neon**: 12 blistavih neonskih tonova.
+- **🐻 Priroda**: 16 zemljanih tonova, tonova krzna, drveta i kože.
+- **🎨 Custom Color Picker**: Neograničen izbor bilo koje RGB/Hex nijanse.
+
+### 4. Otvorena Biblioteka Slika za Bojanje
+Ugrađene čiste vektorske stranice optimizovane za decu, podeljene po kategorijama:
+- **🦁 Životinje**: Veseli lavić, Mali T-Rex dinosaur...
+- **🦸 Crtani & Heroji**: Bearman junak (sa 5 prstiju)...
+- **🚗 Vozila**: Brzi sportski trkački auto...
+- **🦄 Bajke & Magija**: Magični jednorog sa zvezdicama...
+- **🌸 Priroda & Mandala**: Cvetna mandala za opuštajuće bojenje...
+
+### 5. Dvoslojni Canvas & Responzivnost
+- Boje se crtaju na donjem sloju, a crne linije se nalaze na gornjem sloju sa `multiply` modom, garantujući da linije nikada neće biti zamrljane ili prebrisane.
+- `touch-action: none` sprečava neželjeno skrolovanje ekrana na telefonima i tabletima.
+- Neograničeni **Undo / Redo**, dugme **Očisti**, **Štampaj (Print)** za štampanje prazne bojanke na papiru, i **Sačuvaj (PNG)**.
+
+---
+
+## 🚀 Pokretanje
+Otvorite `index.html` direktno u pregledaču (dvoklikom, radi i preko `file://` protokola na Desktopu i mobilnim uređajima).
+U vrhu stranice prebacujte se između **✨ PicsArt AI Studio** i **🖍️ Dečija Bojanka**, ili kliknite **"Pošalji u Bojanku"** da trenutnu AI sliku odmah pretvorite u stranicu za bojenje!
