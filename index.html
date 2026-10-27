@@ -4,474 +4,61 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0b0c10" />
-  <title>Mastograd Studio — PicsArt AI Filteri &amp; Napredna Bojanka za Decu</title>
+  <title>Mastograd — Napredna Kreativna Bojanka za Decu</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <div class="app-shell">
-    <!-- Top PicsArt & Bojanka Studio Header -->
+    <!-- Top Bojanka Header -->
     <header class="top-bar">
       <div class="brand-group">
-        <div class="brand-logo" aria-hidden="true">M</div>
+        <div class="brand-logo" aria-hidden="true" style="background:linear-gradient(135deg, #f43f5e 0%, #f59e0b 50%, #8b5cf6 100%);">🖍️</div>
         <div class="brand-title">
-          <h1>Mastograd Studio <span class="pro-badge">PRO 10/10</span></h1>
-          <span class="brand-subtitle">AI Ilustratorski Filteri &amp; Napredna Dečija Bojanka</span>
+          <h1>Mastograd Bojanka <span class="pro-badge" style="background:linear-gradient(135deg, #f43f5e, #f59e0b);">DEČIJI STUDIO</span></h1>
+          <span class="brand-subtitle">Kreativno bojenje • Flomaster • Oblici • Otvorena biblioteka</span>
         </div>
       </div>
 
-      <!-- Studio Mode Switcher: AI & Filters vs Dečija Bojanka -->
-      <div class="top-mode-switcher" role="tablist" aria-label="Izbor studija">
-        <button type="button" class="top-mode-btn active" id="switchModeAiBtn" role="tab" aria-selected="true">
-          ✨ PicsArt AI Studio
-        </button>
-        <button type="button" class="top-mode-btn" id="switchModeColoringBtn" role="tab" aria-selected="false">
-          🖍️ Dečija Bojanka
-        </button>
-      </div>
-
       <div class="top-actions">
-        <button type="button" class="pill-btn" id="sendToColoringBtn" title="Pretvori sliku u čistu stranicu za bojenje sa zatvorenim linijama">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-          </svg>
-          <span>Pošalji u Bojanku</span>
+        <button type="button" class="pill-btn primary" id="topOpenLibraryBtn" title="Otvori biblioteku gotovih slika za bojanje">
+          📚 Biblioteka Slika
         </button>
 
-        <input type="file" id="photoUploadInput" accept="image/*" hidden />
-        <button type="button" class="pill-btn" id="uploadPhotoBtn" title="Učitaj svoju fotografiju">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          <span>Dodaj sliku</span>
+        <input type="file" id="cbConverterFileInput" accept="image/*" hidden />
+        <button type="button" class="pill-btn" id="topConverterUploadBtn" title="Pretvori bilo koju fotografiju u čistu stranicu za bojanje">
+          📷 Napravi od Fotografije
         </button>
 
-        <button type="button" class="icon-btn" id="undoBtn" title="Korak nazad (Undo)" disabled aria-label="Korak nazad">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
-          </svg>
+        <button type="button" class="icon-btn" id="cbUndoBtn" title="Korak nazad (Undo)" disabled aria-label="Korak nazad">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
         </button>
 
-        <button type="button" class="icon-btn" id="redoBtn" title="Korak napred (Redo)" disabled aria-label="Korak napred">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
-          </svg>
+        <button type="button" class="icon-btn" id="cbRedoBtn" title="Korak napred (Redo)" disabled aria-label="Korak napred">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
         </button>
 
-        <button type="button" class="pill-btn" id="compareSplitBtn" title="Uporedi Pre / Posle sa klizačem">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>
-          </svg>
-          <span>Pre / Posle</span>
+        <button type="button" class="icon-btn" id="cbClearBtn" title="Obriši sve boje sa crteža" aria-label="Obriši boje">
+          🗑️
         </button>
 
-        <button type="button" class="icon-btn" id="zoomToggleBtn" title="Uvećaj za proveru čistoće linija i BEAR šape">100%</button>
+        <button type="button" class="icon-btn" id="cbPrintBtn" title="Štampaj čistu bojanku za papir i prave bojice" aria-label="Štampaj">
+          🖨️
+        </button>
 
-        <button type="button" class="pill-btn primary" id="openExportBtn">
+        <button type="button" class="pill-btn primary" id="cbDownloadBtn" title="Preuzmi obojenu sliku (PNG)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
             <polyline points="17 21 17 13 7 13 7 21"/>
           </svg>
-          <span>Sačuvaj HD</span>
+          <span>Sačuvaj</span>
         </button>
       </div>
     </header>
 
     <!-- =========================================================================
-         SECTION 1: PICSART AI & FILTER STUDIO
+         GLAVNI STUDIO: NAPREDNA KREATIVNA BOJANKA ZA DECU
          ========================================================================= -->
-    <div id="aiStudioSection">
-      <!-- Main Interactive Canvas Stage -->
-      <main class="canvas-stage" id="canvasStage">
-        <div class="stage-floating-top">
-          <div class="stage-pill-group" id="sampleChipGroup" aria-label="Reprezentativne test fotografije">
-            <!-- Populated dynamically -->
-          </div>
-
-          <div class="quality-meter" title="Automatska ocena očuvanja identiteta i čistoće linija">
-            <span id="edgeClarityText">Čistoća linija: 9.9 • Identitet: Strict</span>
-            <span class="quality-score" id="qualityScoreBadge">10/10</span>
-          </div>
-        </div>
-
-        <div class="canvas-viewport" id="canvasViewport">
-          <canvas id="outputCanvas" width="760" height="560"></canvas>
-          <canvas id="originalCanvas" width="760" height="560"></canvas>
-          <canvas id="overlayCanvas" width="760" height="560"></canvas>
-
-          <span class="split-badge before" id="badgeBefore">Original Foto</span>
-          <span class="split-badge after" id="badgeAfter">Ilustracija</span>
-
-          <div class="split-slider-line" id="splitSliderLine">
-            <div class="split-handle">↔</div>
-          </div>
-        </div>
-
-        <div class="processing-pill" id="processingPill">
-          <span class="spinner-dot"></span>
-          <span>Renderovanje profesionalne ilustracije i zaštite detalja...</span>
-        </div>
-      </main>
-
-      <!-- PicsArt Android / Bearman Studio Dock -->
-      <aside class="editor-dock">
-        <div class="panel-content-area">
-          <!-- TAB 1: Biblioteka Premium Filtera (00 - 10) -->
-          <section class="tool-panel active" id="panelFilters">
-            <!-- Execution Mode: Creative vs Product-Safe (BEAR Underwear) -->
-            <div class="mode-switch-bar" role="group" aria-label="Režim ilustracije">
-              <button type="button" class="mode-switch-btn active" id="modeCreativeBtn" data-mode="creative">
-                <span>🎨 Creative Illustration</span>
-                <span class="mode-sub">Za Bearman, maskote, superheroje i portrete</span>
-              </button>
-              <button type="button" class="mode-switch-btn" id="modeProductSafeBtn" data-mode="product-safe">
-                <span>🛡️ Product-Safe (BEAR)</span>
-                <span class="mode-sub">Čuva kroj, šavove i 5-prstiju BEAR šapu</span>
-              </button>
-            </div>
-
-            <!-- BEAR 5-Toe Logo Protection Mask Banner -->
-            <div class="logo-shield-banner">
-              <div>
-                <strong>🐾 Zaštita BEAR Logotipa (5 prstiju)</strong>
-                <div style="font-size:10.5px; color:#fef3c7; opacity:0.88;">
-                  Maskira originalni logo i vraća ga 100% očuvanog nakon stilizacije (prevuci zlatni štit na slici)
-                </div>
-              </div>
-              <button type="button" class="toggle-btn" id="toggleBearLogoShield" aria-label="Zaštiti BEAR logo maskom"></button>
-            </div>
-
-            <!-- Style Reference Image Card (Bearman Reference Transfer) -->
-            <div class="style-ref-card">
-              <div class="style-ref-top">
-                <div>
-                  <strong style="font-size:12px; color:#f3e8ff;">🖼️ Style Reference Image (Bearman Referenca)</strong>
-                  <div style="font-size:10px; color:var(--text-secondary);">
-                    Prenosi SAMO tehniku slikanja, konture, senčenje i teksturu (NE menja lice, pozu ili odeću)
-                  </div>
-                </div>
-                <button type="button" class="toggle-btn active" id="toggleStyleRefBtn" aria-label="Uključi Style Reference sliku"></button>
-              </div>
-
-              <div class="style-ref-body" id="styleRefBody">
-                <div class="style-ref-thumb-wrap" title="Aktivna Style Reference slika">
-                  <canvas id="styleRefThumbCanvas" width="120" height="90"></canvas>
-                </div>
-                <div class="style-ref-meta">
-                  <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                    <input type="file" id="styleRefUploadInput" accept="image/*" hidden />
-                    <button type="button" class="reset-section-btn" id="uploadStyleRefBtn" style="border-color:var(--accent-primary); color:#e9d5ff;">
-                      📁 Učitaj Bearman / Ref sliku
-                    </button>
-                    <button type="button" class="reset-section-btn" id="cycleStyleRefPresetBtn">
-                      🔄 Bearman Preset
-                    </button>
-                  </div>
-                  <span class="style-ref-sig-badge" id="styleRefSignatureText">
-                    Ref: Bearman Finale • Tehnika: Slikarski + Tuš
-                  </span>
-                </div>
-              </div>
-
-              <div class="slider-row" style="margin-top:2px;">
-                <div class="slider-label-line">
-                  <span>Snaga prenosa tehnike sa referentne slike</span>
-                  <span class="slider-val" id="sliderStyleRefStrengthVal">75%</span>
-                </div>
-                <input type="range" id="sliderStyleRefStrength" min="0" max="100" step="1" value="75" />
-              </div>
-            </div>
-
-            <div class="panel-header">
-              <h2>1. Biblioteka Premium Filtera</h2>
-              <div style="display:flex; gap:4px;">
-                <button type="button" class="reset-section-btn active" id="filterViewAllBtn">Svi (11)</button>
-                <button type="button" class="reset-section-btn" id="filterViewMvpBtn">⭐ MVP (5)</button>
-              </div>
-            </div>
-
-            <div class="filter-cards-grid" id="filterCardsGrid">
-              <!-- Populated by app.js with live mini-canvases -->
-            </div>
-
-            <!-- Master Filter Intensity Slider -->
-            <div class="control-group" style="padding: 9px 12px;">
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Intenzitet stilizacije (Filter Intensity)</span>
-                  <span class="slider-val" id="sliderMasterIntensityVal">78%</span>
-                </div>
-                <input type="range" id="sliderMasterIntensity" min="0" max="100" step="1" value="78" />
-              </div>
-            </div>
-
-            <div class="substyle-strip" id="substyleStrip">
-              <!-- Sub-variations for selected filter -->
-            </div>
-          </section>
-
-          <!-- TAB 2: Kontrola Linija & Tuša (Clean Ink Engine) -->
-          <section class="tool-panel" id="panelLines">
-            <div class="panel-header">
-              <h2>Čiste Linije, Tuš &amp; Šrafura</h2>
-            </div>
-
-            <div class="control-group">
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Čistoća linija (Uklanjanje šuma pre tuša)</span>
-                  <span class="slider-val" id="sliderLineCleanlinessVal">84%</span>
-                </div>
-                <input type="range" id="sliderLineCleanliness" min="10" max="100" step="1" value="84" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Debljina kontura (Controlled Line Weight)</span>
-                  <span class="slider-val" id="sliderLineThicknessVal">1.45px</span>
-                </div>
-                <input type="range" id="sliderLineThickness" min="0.6" max="2.4" step="0.05" value="1.45" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Selektivnost kontura (Edge Prag)</span>
-                  <span class="slider-val" id="sliderLineThresholdVal">56%</span>
-                </div>
-                <input type="range" id="sliderLineThreshold" min="15" max="92" step="1" value="56" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Jačina tuš linije (Ink Opacity)</span>
-                  <span class="slider-val" id="sliderLineStrengthVal">94%</span>
-                </div>
-                <input type="range" id="sliderLineStrength" min="0" max="100" step="1" value="94" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Ručna šrafura u senkama (Crosshatching)</span>
-                  <span class="slider-val" id="sliderCrosshatchVal">42%</span>
-                </div>
-                <input type="range" id="sliderCrosshatch" min="0" max="95" step="1" value="42" />
-              </div>
-
-              <div class="swatch-row">
-                <span style="font-size: 12px; font-weight: 600;">Boja tuš linije:</span>
-                <div class="swatch-list">
-                  <button type="button" class="color-swatch active" data-color="#08090f" style="background:#08090f;" title="Comic Book Crni Tuš"></button>
-                  <button type="button" class="color-swatch" data-color="#1e120a" style="background:#1e120a;" title="Concept Art / Looney Tunes Sepia"></button>
-                  <button type="button" class="color-swatch" data-color="#1b162a" style="background:#1b162a;" title="Anime Cinematic Indigo"></button>
-                  <button type="button" class="color-swatch" data-color="#3b0a1e" style="background:#3b0a1e;" title="Fashion Editorial Bordo"></button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- TAB 3: Concept Art Četkica, Cel-Shading & Osvetljenje -->
-          <section class="tool-panel" id="panelShading">
-            <div class="panel-header">
-              <h2>Concept Art Četkica, Cel &amp; Osvetljenje</h2>
-            </div>
-
-            <div class="control-group">
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Tekstura slikarske četkice (Painterly Brush)</span>
-                  <span class="slider-val" id="sliderPainterlyBrushVal">15%</span>
-                </div>
-                <input type="range" id="sliderPainterlyBrush" min="0" max="100" step="1" value="15" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Herojsko bočno osvetljenje (Rim Light Glow)</span>
-                  <span class="slider-val" id="sliderRimLightBoostVal">25%</span>
-                </div>
-                <input type="range" id="sliderRimLightBoost" min="0" max="100" step="1" value="25" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Glatkoća 2D/3D površina (SNN + Bilateral)</span>
-                  <span class="slider-val" id="sliderSurfaceFlatnessVal">3x</span>
-                </div>
-                <input type="range" id="sliderSurfaceFlatness" min="1" max="5" step="1" value="3" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Broj nivoa senčenja (Cel / Tonal Bands)</span>
-                  <span class="slider-val" id="sliderCelLevelsVal">6 tonova</span>
-                </div>
-                <input type="range" id="sliderCelLevels" min="2" max="12" step="1" value="6" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Intenzitet boja (Color Punch)</span>
-                  <span class="slider-val" id="sliderColorPunchVal">45%</span>
-                </div>
-                <input type="range" id="sliderColorPunch" min="-100" max="90" step="1" value="45" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Ben-Day Halftone tačkice (Pop Art / Strip)</span>
-                  <span class="slider-val" id="sliderHalftoneIntensityVal">26%</span>
-                </div>
-                <input type="range" id="sliderHalftoneIntensity" min="0" max="85" step="1" value="26" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Duboke crne senke (India Ink Pooling)</span>
-                  <span class="slider-val" id="sliderShadowInkPoolVal">44%</span>
-                </div>
-                <input type="range" id="sliderShadowInkPool" min="0" max="85" step="1" value="44" />
-              </div>
-
-              <div class="toggle-row">
-                <span>Vector Mascot / 2D Stiker Bela Ivica</span>
-                <button type="button" class="toggle-btn" id="toggleStickerBorder" aria-label="2D Stiker Kontura"></button>
-              </div>
-
-              <div class="toggle-row">
-                <span>Looney Tunes Krugovi ("That's all Folks!")</span>
-                <button type="button" class="toggle-btn" id="toggleLooneyRings" aria-label="Looney Tunes Krugovi"></button>
-              </div>
-            </div>
-          </section>
-
-          <!-- TAB 4: 7-Phase Master AI Prompt & Style Reference JSON -->
-          <section class="tool-panel" id="panelPrompt">
-            <div class="panel-header">
-              <h2>7-Fazni Master AI Prompt &amp; Style Ref JSON</h2>
-            </div>
-
-            <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.4;">
-              Automatski generiše: <strong>PHASE 1–7 Master System Prompt</strong> + <strong>Izabrani Stil (npr. Painterly Comic)</strong> + <strong>Style Reference Image direktivu (prenos samo tehnike, kontura i senčenja)</strong> + <strong>Product-Safe zaštitu</strong>.
-            </p>
-
-            <div class="prompt-actions-row">
-              <button type="button" class="pill-btn primary" id="copyFullPromptBtn">📋 Kopiraj AI Prompt</button>
-              <button type="button" class="pill-btn" id="copyConfigJsonBtn">{ } Kopiraj JSON Konfig</button>
-            </div>
-
-            <pre class="prompt-Viewer-box" id="compiledPromptPreview"></pre>
-          </section>
-
-          <!-- TAB 5: Foto Podešavanja & Strip Stikeri -->
-          <section class="tool-panel" id="panelAdjust">
-            <div class="panel-header">
-              <h2>Foto Podešavanja &amp; Strip Oblačići</h2>
-              <button type="button" class="reset-section-btn" id="resetAdjustBtn">Resetuj foto</button>
-            </div>
-
-            <div class="control-group">
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Osvetljenje (Brightness)</span>
-                  <span class="slider-val" id="adjBrightnessVal">0</span>
-                </div>
-                <input type="range" id="adjBrightness" min="-50" max="50" step="1" value="0" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Kontrast (Contrast)</span>
-                  <span class="slider-val" id="adjContrastVal">0</span>
-                </div>
-                <input type="range" id="adjContrast" min="-50" max="60" step="1" value="0" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Zasićenost (Saturation)</span>
-                  <span class="slider-val" id="adjSaturationVal">0</span>
-                </div>
-                <input type="range" id="adjSaturation" min="-60" max="60" step="1" value="0" />
-              </div>
-
-              <div class="slider-row">
-                <div class="slider-label-line">
-                  <span>Toplina (Warmth)</span>
-                  <span class="slider-val" id="adjWarmthVal">0</span>
-                </div>
-                <input type="range" id="adjWarmth" min="-50" max="50" step="1" value="0" />
-              </div>
-            </div>
-
-            <div class="panel-header" style="margin-top:4px;">
-              <h2>Strip Oblačići (Prevuci po slici)</h2>
-              <button type="button" class="reset-section-btn" id="clearStickersBtn">Ukloni stikere</button>
-            </div>
-
-            <div class="stickers-grid">
-              <button type="button" class="sticker-btn" data-sticker="pow">
-                <span class="sticker-emoji">💥</span><span>POW!</span>
-              </button>
-              <button type="button" class="sticker-btn" data-sticker="bam">
-                <span class="sticker-emoji">🔥</span><span>BAM!</span>
-              </button>
-              <button type="button" class="sticker-btn" data-sticker="speech">
-                <span class="sticker-emoji">💬</span><span>Oblačić</span>
-              </button>
-            </div>
-          </section>
-        </div>
-
-        <!-- Bottom PicsArt-Style Navigation Bar -->
-        <nav class="bottom-nav" aria-label="Alatke editora">
-          <button type="button" class="nav-tab active" data-panel="panelFilters">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-            <span>00-10 Filteri</span>
-          </button>
-
-          <button type="button" class="nav-tab" data-panel="panelLines">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-            </svg>
-            <span>Linije &amp; Tuš</span>
-          </button>
-
-          <button type="button" class="nav-tab" data-panel="panelShading">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/>
-              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
-            </svg>
-            <span>Concept &amp; Cel</span>
-          </button>
-
-          <button type="button" class="nav-tab" data-panel="panelPrompt">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
-            </svg>
-            <span>AI Prompt</span>
-          </button>
-
-          <button type="button" class="nav-tab" data-panel="panelAdjust">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
-              <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
-              <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
-            </svg>
-            <span>Foto &amp; Stiker</span>
-          </button>
-        </nav>
-      </aside>
-    </div>
-
-    <!-- =========================================================================
-         SECTION 2: NAPREDNA KREATIVNA BOJANKA ZA DECU
-         ========================================================================= -->
-    <div id="coloringStudioSection" class="coloring-subshell" style="display:none;">
+    <div id="coloringStudioSection" class="coloring-subshell">
       <!-- Left Tool Dock (Kantica, Flomaster, Oblici, Gumica) -->
       <nav class="cb-tools-bar" aria-label="Alatke bojanke">
         <button type="button" class="cb-tool-btn active" data-tool="bucket" title="Kantica za bojenje (Klikni da obojiš celu oblast)">
@@ -484,7 +71,7 @@
           <span class="label">Flomaster</span>
         </button>
 
-        <button type="button" class="cb-tool-btn" data-tool="shape" title="Geometrijski oblici (Krug, Zvezda, Srce...)">
+        <button type="button" class="cb-tool-btn" data-tool="shape" title="Geometrijski oblici (Krug, Zvezda, Srce, Trougao...)">
           <span>⭐</span>
           <span class="label">Oblici</span>
         </button>
@@ -505,16 +92,15 @@
               <span id="cbTemplateTitle">Bearman Junak</span>
             </div>
             <button type="button" class="pill-btn primary" id="cbOpenLibraryBtn" title="Otvori biblioteku slika za bojanje">
-              📚 Biblioteka Slika
+              📚 Biblioteka
             </button>
-            <input type="file" id="cbConverterFileInput" accept="image/*" hidden />
-            <button type="button" class="pill-btn" id="cbConverterUploadBtn" title="Pretvori bilo koju fotografiju u stranicu za bojenje">
-              📷 Napravi od Fotografije
+            <button type="button" class="pill-btn" id="cbConverterUploadBtn" title="Pretvori fotografiju u stranicu za bojenje">
+              📷 Iz Fotografije
             </button>
           </div>
 
+          <!-- Dynamic Suboptions (Marker Size or Shapes selector) -->
           <div class="cb-stage-group">
-            <!-- Dynamic Suboptions (Marker Size or Shapes selector) -->
             <div class="cb-suboptions-bar" id="cbMarkerOptions">
               <span style="font-size:10px; color:var(--text-secondary); font-weight:700;">Debljina:</span>
               <button type="button" class="cb-size-btn" data-size="6">Tanka</button>
@@ -536,23 +122,6 @@
                 Ispunjeno ◼
               </button>
             </div>
-
-            <!-- Action buttons: Undo, Redo, Clear, Print, Save -->
-            <button type="button" class="icon-btn" id="cbUndoBtn" title="Korak nazad" disabled>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-            </button>
-            <button type="button" class="icon-btn" id="cbRedoBtn" title="Korak napred" disabled>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
-            </button>
-            <button type="button" class="icon-btn" id="cbClearBtn" title="Obriši sve boje (Očisti platno)">
-              🗑️
-            </button>
-            <button type="button" class="icon-btn" id="cbPrintBtn" title="Štampaj čistu bojanku na štampaču!">
-              🖨️
-            </button>
-            <button type="button" class="pill-btn primary" id="cbDownloadBtn" title="Preuzmi gotovu obojenu sliku">
-              💾 Sačuvaj
-            </button>
           </div>
         </div>
 
@@ -595,29 +164,8 @@
   </div>
 
   <!-- =========================================================================
-       MODALS: EXPORT, BIBLIOTEKA SLIKA & NAPREDNI KONVERTOR FOTOGRAFIJE
+       MODALS: BIBLIOTEKA SLIKA & NAPREDNI KONVERTOR FOTOGRAFIJE
        ========================================================================= -->
-
-  <!-- Export HD Dialog (AI Studio) -->
-  <dialog class="studio-modal" id="exportModal">
-    <div class="modal-header">
-      <h3>Sačuvaj Ilustraciju (HD)</h3>
-      <button type="button" class="icon-btn" id="closeExportBtn">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size: 12.5px; color: var(--text-secondary);">
-        Izaberi format za eksport slike u punoj rezoluciji (uključujući zaštićeni BEAR logotip sa 5 prstiju ukoliko je maska uključena):
-      </p>
-      <div class="format-options">
-        <button type="button" class="format-btn active" data-mime="image/png">PNG (Lossless)</button>
-        <button type="button" class="format-btn" data-mime="image/webp">WebP (Pro)</button>
-        <button type="button" class="format-btn" data-mime="image/jpeg">JPG (96%)</button>
-      </div>
-      <button type="button" class="pill-btn primary" id="confirmDownloadBtn" style="height: 42px; width: 100%; margin-top: 6px;">
-        Preuzmi Ilustraciju
-      </button>
-    </div>
-  </dialog>
 
   <!-- Otvorena Biblioteka Slika za Bojanje (Modal) -->
   <dialog class="studio-modal" id="cbLibraryModal" style="width:min(94vw, 760px); max-height:85vh;">
@@ -690,21 +238,33 @@
             </div>
           </div>
 
-          <button type="button" class="pill-btn primary" id="cbApplyConverterBtn" style="height:44px; font-size:13px; font-weight:800; width:100%;">
-            ✓ Prihvati i Otvori u Bojanci
-          </button>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button type="button" class="pill-btn primary" id="cbApplyConverterBtn" style="height:44px; font-size:13px; font-weight:800; width:100%;">
+              ✓ Prilagodi linije i zatvori procepe
+            </button>
+            <button type="button" class="pill-btn" id="cbDirectLoadBtn" style="height:38px; width:100%; font-size:12px; border:1px solid var(--border-subtle); color:var(--text-secondary);" title="Ako je slika već gotov crno-beli crtež / bojanka, učitaj je direktno bez promene linija">
+              📄 Učitaj direktno bez obrade (Bojanka sa neta)
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </dialog>
 
-  <!-- Scripts -->
-  <script src="js/filter-config.js"></script>
-  <script src="js/cartoon-engine.js"></script>
-  <script src="js/sample-images.js"></script>
+  <!-- Coloring Scripts & PWA Loader -->
   <script src="js/coloring-library.js"></script>
   <script src="js/coloring-engine.js"></script>
   <script src="js/coloring-ui.js"></script>
-  <script src="js/app.js"></script>
+  <script>
+    if (window.location.protocol.startsWith('http')) {
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = 'manifest.json';
+      document.head.appendChild(link);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      }
+    }
+  </script>
 </body>
 </html>

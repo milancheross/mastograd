@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  <!-- Palette & Crayon Icon -->
+  <g filter="url(#shadow)" fill="#ffffff" transform="translate(64, 64) scale(0.75)">
+    <!-- Palette Board -->
+    <path d="M256 32C132.3 32 32 132.3 32 256c0 44.2 35.8 80 80 80h32c17.7 0 32 14.3 32 32 0 13.3-8.3 24.9-19.9 29.5-12.7 5.1-20.1 18.7-17.7 32.2 4.2 23.3 24.5 40.3 48.2 40.3 141.4 0 256-114.6 256-256C512 146.7 397.4 32 256 32zm-128 160c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm96-64c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128 0c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm96 64c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/>
+    <!-- Crayon / Brush -->
+    <path d="M410.5 41.1c-15.6-15.6-40.9-15.6-56.6 0L194.3 200.7c-5.7 5.7-9.5 13-10.9 21l-14 80.5c-2.4 13.8 8.8 25 22.6 22.6l80.5-14c8-1.4 15.3-5.2 21-10.9L453 140.3c15.6-15.6 15.6-40.9 0-56.6l-42.5-42.6z" fill="#fef08a"/>
+  </g>
+</svg>
+

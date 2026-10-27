@@ -1,11 +1,22 @@
 {
-  "name": "Mastograd Studio — PicsArt Pro Cartoon & Illustration Editor",
-  "short_name": "Mastograd",
-  "description": "10/10 NPR Cartoon, Comic Book, 2D Clipart & Looney Tunes Photo Editor modeled after PicsArt for Android",
+  "name": "Mastograd — Dečija Bojanka",
+  "short_name": "Bojanka",
+  "description": "Kreativna digitalna bojanka za decu sa kanticom, flomasterom, oblicima i bibliotekom slika",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b0c10",
-  "theme_color": "#a855f7",
-  "orientation": "portrait-primary"
+  "theme_color": "#f43f5e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
-

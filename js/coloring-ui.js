@@ -89,7 +89,6 @@ class MastogradColoringStudio {
   }
 
   initUI() {
-    this.initModeSwitcher();
     this.initToolButtons();
     this.initPaletteButtons();
     this.initShapeSelector();
@@ -97,40 +96,6 @@ class MastogradColoringStudio {
     this.initLibraryModal();
     this.initConverterModal();
     this.initActions();
-  }
-
-  initModeSwitcher() {
-    const aiBtn = document.getElementById('switchModeAiBtn');
-    const cbBtn = document.getElementById('switchModeColoringBtn');
-    const aiSection = document.getElementById('aiStudioSection');
-    const cbSection = document.getElementById('coloringStudioSection');
-    const sendToCbBtn = document.getElementById('sendToColoringBtn');
-
-    const setMode = (mode) => {
-      if (mode === 'coloring') {
-        aiSection.style.display = 'none';
-        cbSection.style.display = 'grid';
-        cbBtn.classList.add('active');
-        aiBtn.classList.remove('active');
-        this.resizeToFit();
-      } else {
-        cbSection.style.display = 'none';
-        aiSection.style.display = 'grid';
-        aiBtn.classList.add('active');
-        cbBtn.classList.remove('active');
-      }
-    };
-
-    aiBtn?.addEventListener('click', () => setMode('ai'));
-    cbBtn?.addEventListener('click', () => setMode('coloring'));
-
-    sendToCbBtn?.addEventListener('click', () => {
-      const mainOutput = document.getElementById('outputCanvas');
-      if (mainOutput) {
-        setMode('coloring');
-        this.openConverterWithCanvas(mainOutput);
-      }
-    });
   }
 
   initToolButtons() {
@@ -418,6 +383,10 @@ class MastogradColoringStudio {
       dialog?.showModal();
       this.renderLibraryGrid('all');
     });
+    document.getElementById('topOpenLibraryBtn')?.addEventListener('click', () => {
+      dialog?.showModal();
+      this.renderLibraryGrid('all');
+    });
     closeBtn?.addEventListener('click', () => dialog?.close());
 
     // Tabs
@@ -484,6 +453,7 @@ class MastogradColoringStudio {
     const applyBtn = document.getElementById('cbApplyConverterBtn');
 
     uploadBtn?.addEventListener('click', () => uploadInput?.click());
+    document.getElementById('topConverterUploadBtn')?.addEventListener('click', () => uploadInput?.click());
     uploadInput?.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (file) {
@@ -532,6 +502,43 @@ class MastogradColoringStudio {
       const linesCanvas = convertPhotoToColoringPage(this.converterTempCanvas, this.converterOptions);
       this.setCustomLines(linesCanvas, 'Fotografija u Bojanci');
       dialog?.close();
+    });
+
+    const directBtn = document.getElementById('cbDirectLoadBtn');
+    directBtn?.addEventListener('click', () => {
+      this.setCustomLines(this.converterTempCanvas, 'Učitana Bojanka');
+      dialog?.close();
+    });
+
+    // Drag & Drop slika direktno na platno
+    const stageViewport = document.getElementById('cbCanvasViewport');
+    stageViewport?.addEventListener('dragover', (e) => e.preventDefault());
+    stageViewport?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer?.files?.[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 840;
+            let w = img.naturalWidth;
+            let h = img.naturalHeight;
+            if (w > maxDim || h > maxDim) {
+              const s = maxDim / Math.max(w, h);
+              w = Math.round(w * s);
+              h = Math.round(h * s);
+            }
+            this.converterTempCanvas.width = w;
+            this.converterTempCanvas.height = h;
+            this.converterTempCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            dialog?.showModal();
+            this.renderConverterPreview();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
     });
   }
 
