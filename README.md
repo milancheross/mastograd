@@ -55,3 +55,23 @@ Ugrađene čiste, zatvorene vektorske stranice optimizovane za kanticu, podeljen
 
 ## 🚀 Pokretanje
 Otvorite `index.html` direktno u pregledaču (dvoklikom, radi i preko `file://` protokola).
+
+
+## Učitavanje sopstvenih slika
+
+Sačuvajte sliku sa interneta na uređaj i izaberite **Učitaj sliku spremnu za bojenje**. Gotov crno-beli crtež odmah je dostupan za bojenje. Za fotografije koristite pretvaranje u bojanku. Podržani su formati koje pregledač može da otvori, uključujući PNG, JPG, WebP, GIF, AVIF i samostalni SVG. HTML stranice i nepodržani ili oštećeni fajlovi prikazuju poruku o grešci.
+
+Korisničke slike se čuvaju lokalno u IndexedDB biblioteci. Prethodno sačuvane slike iz localStorage automatski se prenose pri otvaranju; stara kopija uklanja se tek nakon uspešnog prenosa. Ako je trajno čuvanje blokirano ili je prostor pun, slika ostaje dostupna za bojenje u tekućoj sesiji uz poruku da treba preuzeti rad. Brisanje podataka sajta u pregledaču uklanja sačuvane slike.
+
+### Provera učitavanja
+
+Instalirajte test zavisnosti sa `npm install`, a za proveru u pregledaču i Chromium sa `npx playwright install chromium`.
+
+Provera čuvanja i migracije bez pregledača: `npm test`.
+
+Za proveru celog toka u pregledaču:
+
+1. Pokrenite `python3 -m http.server 8765` iz korena projekta.
+2. U drugom terminalu pokrenite `npm run test:browser`.
+
+Test u pregledaču pokriva učitavanje i bojenje, pun localStorage, ponovni izbor istog fajla, otvaranje posle osvežavanja, oštećen fajl u grupi, migraciju starih slika, brisanje i rad kada čuvanje nije dostupno. `TEST_URL` i `CHROMIUM_PATH` mogu zadati drugu adresu i instalirani pregledač.

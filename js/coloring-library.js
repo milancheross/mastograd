@@ -15,52 +15,74 @@ const COLORING_CATEGORIES = [
 
 const STORAGE_KEY = 'mastograd_user_coloring_templates';
 
-function getUserTemplates() {
+// Keep a session copy so coloring remains available even when storage is blocked.
+let userTemplates = [];
+let database;
+function readLegacyTemplates() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (err) {
-    console.error('Greška pri učitavanju korisničkih slika iz biblioteke:', err);
-    return [];
-  }
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(list) ? list.filter(t => t && t.id && t.dataUrl) : [];
+  } catch { return []; }
 }
-
-function saveUserTemplates(list) {
+function transaction(mode, operation) {
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction('templates', mode);
+    const request = operation(tx.objectStore('templates'));
+    tx.oncomplete = () => resolve(request?.result);
+    tx.onerror = tx.onabort = () => reject(tx.error || new Error('Čuvanje nije uspelo.'));
+  });
+}
+const ready = (async () => {
+  const legacy = readLegacyTemplates();
+  userTemplates = legacy;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('mastograd-coloring', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('templates', { keyPath: 'id' });
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error('Zatvori ostale kartice Maštograda i pokušaj ponovo.'));
+    });
+    const stored = await transaction('readonly', store => store.getAll());
+    const ids = new Set(stored.map(t => t.id));
+    const missing = legacy.filter(t => !ids.has(t.id));
+    userTemplates = [...stored, ...missing].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    if (missing.length) await transaction('readwrite', store => { missing.forEach(t => store.put(t)); });
+    // Only remove the old copy after the migration has committed.
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
   } catch (err) {
-    console.error('Greška pri čuvanju slika u biblioteku:', err);
+    console.warn('Biblioteka koristi memoriju ove sesije:', err);
+    database = null;
   }
-}
-
-function addUserTemplate(tpl) {
-  const current = getUserTemplates();
+})();
+function getUserTemplates() { return [...userTemplates]; }
+async function addUserTemplate(tpl) {
+  await ready;
   const newTpl = {
-    id: tpl.id || ('user_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
-    category: 'user',
-    title: tpl.title || 'Moja Bojanka',
+    id: tpl.id || ('user_' + Date.now() + '_' + Math.random().toString(36).slice(2)),
+    category: 'user', title: tpl.title || 'Moja Bojanka',
     desc: tpl.desc || 'Učitana slika u biblioteci',
-    dataUrl: tpl.dataUrl,
-    thumbUrl: tpl.thumbUrl || tpl.dataUrl,
-    isUserUploaded: true,
-    createdAt: Date.now()
+    dataUrl: tpl.dataUrl, thumbUrl: tpl.thumbUrl || tpl.dataUrl,
+    isUserUploaded: true, createdAt: Date.now()
   };
-  current.unshift(newTpl);
-  saveUserTemplates(current);
+  userTemplates.unshift(newTpl);
+  try {
+    if (!database) throw new Error('Trajno čuvanje nije dostupno.');
+    await transaction('readwrite', store => store.put(newTpl));
+  } catch (err) {
+    // The UI can still open this template and export the colored picture.
+    window.dispatchEvent(new CustomEvent('mastograd-storage-error', { detail: err }));
+  }
   return newTpl;
 }
-
-function removeUserTemplate(id) {
-  let current = getUserTemplates();
-  current = current.filter(t => t.id !== id);
-  saveUserTemplates(current);
-  return current;
+async function removeUserTemplate(id) {
+  await ready;
+  if (!database) throw new Error('Trajno čuvanje nije dostupno.');
+  await transaction('readwrite', store => store.delete(id));
+  userTemplates = userTemplates.filter(t => t.id !== id);
+  return getUserTemplates();
 }
-
-function getAllTemplates() {
-  const userList = getUserTemplates();
-  return [...userList, ...COLORING_TEMPLATES];
-}
+function getAllTemplates() { return [...userTemplates, ...COLORING_TEMPLATES]; }
 
 const COLORING_TEMPLATES = [
   {
@@ -634,6 +656,7 @@ const COLORING_TEMPLATES = [
 ];
 
 window.MastogradColoringLibrary = {
+  ready,
   COLORING_CATEGORIES,
   COLORING_TEMPLATES,
   getUserTemplates,

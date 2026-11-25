@@ -11,6 +11,7 @@
 (function () {
 
 const {
+  ready,
   COLORING_CATEGORIES,
   COLORING_TEMPLATES,
   getUserTemplates,
@@ -47,6 +48,31 @@ const PALETTES = {
     '#166534', '#1e3a8a', '#0369a1', '#e2e8f0'
   ]
 };
+
+function escapeText(value) {
+  return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function notify(message) {
+  let status = document.getElementById('cbUploadStatus');
+  if (!status) {
+    status = document.createElement('p');
+    status.id = 'cbUploadStatus';
+    status.setAttribute('role', 'status');
+    document.getElementById('coloringStudioSection').prepend(status);
+  }
+  status.textContent = message;
+}
+window.addEventListener('mastograd-storage-error', () => notify('Slika je učitana za bojenje, ali nije trajno sačuvana. Preuzmi rad pre zatvaranja stranice.'));
+function decodeFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    const finish = () => URL.revokeObjectURL(url);
+    img.onload = () => { finish(); resolve(img); };
+    img.onerror = () => { finish(); reject(new Error('Slika nije podržana ili je oštećena. Sačuvaj je kao PNG, JPG, WebP, GIF, AVIF ili SVG.')); };
+    img.src = url;
+  });
+}
 
 function hexToRgb(hex) {
   const clean = hex.replace('#', '');
@@ -92,7 +118,7 @@ class MastogradColoringStudio {
     this.converterOptions = { threshold: 55, lineWeight: 2, gapClosing: 2, denoise: 4 };
 
     this.initUI();
-    this.loadTemplate('bearman_coloring');
+    ready.then(() => this.loadTemplate('bearman_coloring'));
   }
 
   initUI() {
@@ -289,9 +315,20 @@ class MastogradColoringStudio {
     target.addEventListener('pointercancel', finishPointer);
   }
 
-  loadTemplate(tplId) {
+  async loadTemplate(tplId) {
+    const generation = this.loadGeneration = (this.loadGeneration || 0) + 1;
+    await ready;
+    if (generation !== this.loadGeneration) return;
     const all = getAllTemplates();
-    const tpl = all.find(t => t.id === tplId) || all[0];
+    const tpl = all.find(t => t.id === tplId);
+    if (!tpl) { notify('Slika nije pronađena. Učitaj je ponovo sa uređaja.'); return; }
+    let decoded;
+    if (tpl.dataUrl) {
+      try { decoded = await new Promise((resolve, reject) => {
+        const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = tpl.dataUrl;
+      }); } catch { notify('Sačuvana slika ne može da se otvori. Učitaj je ponovo sa uređaja.'); return; }
+    }
+    if (generation !== this.loadGeneration) return;
     this.state.currentTemplateId = tpl.id;
 
     const w = 780;
@@ -309,25 +346,22 @@ class MastogradColoringStudio {
     this.draftCanvas.height = h;
 
     if (tpl.dataUrl) {
-      const img = new Image();
-      img.onload = () => {
-        this.linesCtx.fillStyle = '#ffffff';
-        this.linesCtx.fillRect(0, 0, w, h);
-        const hRatio = w / img.naturalWidth;
-        const vRatio = h / img.naturalHeight;
-        const ratio = Math.min(hRatio, vRatio);
-        const nw = Math.round(img.naturalWidth * ratio);
-        const nh = Math.round(img.naturalHeight * ratio);
-        const cx = Math.round((w - nw) / 2);
-        const cy = Math.round((h - nh) / 2);
-        this.linesCtx.drawImage(img, cx, cy, nw, nh);
+      const img = decoded;
+      this.linesCtx.fillStyle = '#ffffff';
+      this.linesCtx.fillRect(0, 0, w, h);
+      const hRatio = w / img.naturalWidth;
+      const vRatio = h / img.naturalHeight;
+      const ratio = Math.min(hRatio, vRatio);
+      const nw = Math.round(img.naturalWidth * ratio);
+      const nh = Math.round(img.naturalHeight * ratio);
+      const cx = Math.round((w - nw) / 2);
+      const cy = Math.round((h - nh) / 2);
+      this.linesCtx.drawImage(img, cx, cy, nw, nh);
 
-        this.history = [];
-        this.historyIndex = -1;
-        this.pushHistory();
-        this.updateTitleBadge(tpl.title);
-      };
-      img.src = tpl.dataUrl;
+      this.history = [];
+      this.historyIndex = -1;
+      this.pushHistory();
+      this.updateTitleBadge(tpl.title);
     } else if (typeof tpl.draw === 'function') {
       tpl.draw(this.linesCtx, w, h);
       this.history = [];
@@ -337,7 +371,7 @@ class MastogradColoringStudio {
     }
   }
 
-  saveLinesToUserLibrary(canvasWithLines, title = 'Moja Bojanka', desc = 'Učitano u biblioteku') {
+  async saveLinesToUserLibrary(canvasWithLines, title = 'Moja Bojanka', desc = 'Učitano u biblioteku') {
     const dataUrl = canvasWithLines.toDataURL('image/png');
     const thumbCanvas = document.createElement('canvas');
     thumbCanvas.width = 160;
@@ -458,65 +492,51 @@ class MastogradColoringStudio {
     });
   }
 
-  processDirectUploadFiles(files) {
-    let lastLoadedTplId = null;
-    let pending = files.length;
+  async processDirectUploadFiles(files) {
+    await ready;
+    for (const file of files) {
+      try {
+        const img = await decodeFile(file);
+        // Standardizuj veličinu platna za čisto bojenje
+        const canvas = document.createElement('canvas');
+        canvas.width = 780;
+        canvas.height = 580;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 780, 580);
 
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-          // Standardizuj veličinu platna za čisto bojenje
-          const canvas = document.createElement('canvas');
-          canvas.width = 780;
-          canvas.height = 580;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, 780, 580);
+        const hRatio = 780 / img.naturalWidth;
+        const vRatio = 580 / img.naturalHeight;
+        const ratio = Math.min(hRatio, vRatio);
+        const nw = Math.round(img.naturalWidth * ratio);
+        const nh = Math.round(img.naturalHeight * ratio);
+        ctx.drawImage(img, (780 - nw) / 2, (580 - nh) / 2, nw, nh);
 
-          const hRatio = 780 / img.naturalWidth;
-          const vRatio = 580 / img.naturalHeight;
-          const ratio = Math.min(hRatio, vRatio);
-          const nw = Math.round(img.naturalWidth * ratio);
-          const nh = Math.round(img.naturalHeight * ratio);
-          ctx.drawImage(img, (780 - nw) / 2, (580 - nh) / 2, nw, nh);
-
-          // Čišćenje pozadine i osiguravanje jasnih linija za bojenje kanticom
-          const imgData = ctx.getImageData(0, 0, 780, 580);
-          const d = imgData.data;
-          for (let i = 0; i < d.length; i += 4) {
-            if (d[i + 3] < 80) {
-              // Transparentna pozadina postaje čisto bela
+        // Čišćenje pozadine i osiguravanje jasnih linija za bojenje kanticom
+        const imgData = ctx.getImageData(0, 0, 780, 580);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] < 80) {
+            // Transparentna pozadina postaje čisto bela
+            d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255;
+          } else {
+            const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+            if (lum > 200) {
+              // Prljavo bela pozadina postaje savršeno bela
               d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255;
-            } else {
-              const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-              if (lum > 200) {
-                // Prljavo bela pozadina postaje savršeno bela
-                d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255;
-              } else if (lum < 110) {
-                // Tamne linije konture postaju čisto crne za precizno zatvaranje
-                d[i] = 0; d[i + 1] = 0; d[i + 2] = 0; d[i + 3] = 255;
-              }
+            } else if (lum < 110) {
+              // Tamne linije konture postaju čisto crne za precizno zatvaranje
+              d[i] = 0; d[i + 1] = 0; d[i + 2] = 0; d[i + 3] = 255;
             }
           }
-          ctx.putImageData(imgData, 0, 0);
+        }
+        ctx.putImageData(imgData, 0, 0);
 
-          const rawName = file.name.replace(/\.[^/.]+$/, '').trim();
-          const cleanTitle = rawName ? rawName.slice(0, 24) : `Učitana Bojanka ${getUserTemplates().length + 1}`;
-          const newTpl = this.saveLinesToUserLibrary(canvas, cleanTitle, 'Spremno za bojenje');
-          lastLoadedTplId = newTpl.id;
-
-          pending--;
-          if (pending === 0 && lastLoadedTplId) {
-            // Automatski učitaj dodatu sliku za bojenje na glavnom platnu
-            this.loadTemplate(lastLoadedTplId);
-          }
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
+        const rawName = file.name.replace(/\.[^/.]+$/, '').trim();
+        const newTpl = await this.saveLinesToUserLibrary(canvas, rawName.slice(0, 80) || 'Moja Bojanka', 'Spremno za bojenje');
+        await this.loadTemplate(newTpl.id);
+      } catch (err) { notify(`${file.name}: ${err.message}`); }
+    }
   }
 
   renderLibraryTabs(activeCatId) {
@@ -539,7 +559,10 @@ class MastogradColoringStudio {
     });
   }
 
-  renderLibraryGrid(catId) {
+  async renderLibraryGrid(catId) {
+    this.libraryCategory = catId;
+    await ready;
+    if (this.libraryCategory !== catId) return;
     const grid = document.getElementById('cbLibraryGrid');
     if (!grid) return;
     grid.innerHTML = '';
@@ -562,8 +585,8 @@ class MastogradColoringStudio {
         </div>
         ${isUser ? `<span class="cb-lib-card-badge">Moja Slika</span><button type="button" class="cb-lib-del-btn" title="Obriši ovu sliku iz biblioteke">🗑️</button>` : ''}
         <div class="cb-lib-info">
-          <strong>${tpl.title}</strong>
-          <span>${tpl.desc}</span>
+          <strong>${escapeText(tpl.title)}</strong>
+          <span>${escapeText(tpl.desc)}</span>
         </div>
       `;
 
@@ -595,11 +618,11 @@ class MastogradColoringStudio {
       // Dugme za brisanje sopstvene slike
       if (isUser) {
         const delBtn = card.querySelector('.cb-lib-del-btn');
-        delBtn?.addEventListener('click', (ev) => {
+        delBtn?.addEventListener('click', async (ev) => {
           ev.stopPropagation();
           if (confirm(`Da li želiš da obrišeš sliku "${tpl.title}" iz biblioteke?`)) {
-            removeUserTemplate(tpl.id);
-            this.renderLibraryGrid(catId);
+            try { await removeUserTemplate(tpl.id); this.renderLibraryGrid(catId); }
+            catch { notify('Slika nije obrisana. Pokušaj ponovo.'); }
           }
         });
       }
@@ -613,29 +636,21 @@ class MastogradColoringStudio {
     });
   }
 
-  loadFileIntoConverter(file) {
-    const dialog = document.getElementById('cbConverterModal');
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        const maxDim = 840;
-        let w = img.naturalWidth;
-        let h = img.naturalHeight;
-        if (w > maxDim || h > maxDim) {
-          const s = maxDim / Math.max(w, h);
-          w = Math.round(w * s);
-          h = Math.round(h * s);
-        }
-        this.converterTempCanvas.width = w;
-        this.converterTempCanvas.height = h;
-        this.converterTempCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        dialog?.showModal();
-        this.renderConverterPreview();
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
+  async loadFileIntoConverter(file) {
+    const generation = this.converterGeneration = (this.converterGeneration || 0) + 1;
+    try {
+      const img = await decodeFile(file);
+      if (generation !== this.converterGeneration) return;
+      const scale = Math.min(1, 840 / Math.max(img.naturalWidth, img.naturalHeight));
+      this.converterTempCanvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      this.converterTempCanvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const ctx = this.converterTempCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, this.converterTempCanvas.width, this.converterTempCanvas.height);
+      ctx.drawImage(img, 0, 0, this.converterTempCanvas.width, this.converterTempCanvas.height);
+      document.getElementById('cbConverterModal')?.showModal();
+      this.renderConverterPreview();
+    } catch (err) { notify(err.message); }
   }
 
   initConverterModal() {
@@ -672,19 +687,19 @@ class MastogradColoringStudio {
     bindSlider('cbConvGapClosing', 'gapClosing');
     bindSlider('cbConvDenoise', 'denoise');
 
-    applyBtn?.addEventListener('click', () => {
+    applyBtn?.addEventListener('click', async () => {
       const linesCanvas = convertPhotoToColoringPage(this.converterTempCanvas, this.converterOptions);
       const title = `Bojanka iz Foto ${getUserTemplates().length + 1}`;
       // Automatski sačuvaj i u trajnu korisničku biblioteku
-      const newTpl = this.saveLinesToUserLibrary(linesCanvas, title, 'Automatski kreirano iz fotografije');
+      const newTpl = await this.saveLinesToUserLibrary(linesCanvas, title, 'Automatski kreirano iz fotografije');
       this.loadTemplate(newTpl.id);
       dialog?.close();
     });
 
     const directBtn = document.getElementById('cbDirectLoadBtn');
-    directBtn?.addEventListener('click', () => {
+    directBtn?.addEventListener('click', async () => {
       const title = `Učitana Bojanka ${getUserTemplates().length + 1}`;
-      const newTpl = this.saveLinesToUserLibrary(this.converterTempCanvas, title, 'Učitana gotova bojanka');
+      const newTpl = await this.saveLinesToUserLibrary(this.converterTempCanvas, title, 'Učitana gotova bojanka');
       this.loadTemplate(newTpl.id);
       dialog?.close();
     });
@@ -695,7 +710,7 @@ class MastogradColoringStudio {
     stageViewport?.addEventListener('drop', (e) => {
       e.preventDefault();
       const file = e.dataTransfer?.files?.[0];
-      if (file && file.type.startsWith('image/')) {
+      if (file) {
         this.processDirectUploadFiles([file]);
       }
     });

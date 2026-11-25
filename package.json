@@ -1,0 +1,12 @@
+{
+  "name": "mastograd",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/storage.cjs",
+    "test:browser": "node tests/upload.cjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
+    "playwright": "^1.58.0"
+  }
+}
